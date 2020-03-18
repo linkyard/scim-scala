@@ -27,6 +27,7 @@ lazy val root = (project in file("."))
       libraryDependencies ++= Seq(
         "org.scalatest" %% "scalatest" % Dependencies.scalatest % Test,
         "org.scalacheck" %% "scalacheck" % Dependencies.scalacheck % Test,
+        "org.scalatestplus" %% "scalacheck-1-14" % Dependencies.scalatestScalacheck % Test,
         "com.github.alexarchambault" %% "scalacheck-shapeless_1.14" % Dependencies.scalacheckShapeless % Test,
       ),
       libraryDependencies ++= Dependencies.logBinding.map(_ % Test),
@@ -41,7 +42,9 @@ lazy val scim = (project in file("scim"))
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % Dependencies.cats,
       "org.typelevel" %% "cats-effect" % Dependencies.catsEffect,
+      "co.fs2" %% "fs2-core" % Dependencies.fs2,
       "io.circe" %% "circe-generic" % Dependencies.circe,
+      "com.lihaoyi" %% "fastparse" % Dependencies.fastParse,
     ),
     libraryDependencies ++= Dependencies.logBinding,
   )

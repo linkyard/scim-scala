@@ -1,10 +1,10 @@
 package scim.spi
 
-import scim.model.SearchRequest
+import scim.model.{Filter, SearchRequest, User}
 
 trait UserStore[F[_]] {
 
-//  def search(request: SearchRequest): Seq[User]
+  def search(filter: Filter, sorting: Option[Sorting]): Seq[User]
 
 }
 
