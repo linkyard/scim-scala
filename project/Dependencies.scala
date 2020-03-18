@@ -7,7 +7,7 @@ object Dependencies {
   val catsEffect = "2.1.2"
   val circe = "0.13.0"
   val scalaLogging = "3.9.2"
-  val kamon = "2.0.4"
+  val kamon = "2.0.5"
 
   val scalatest = "3.1.1"
   val scalacheck = "1.14.3"
