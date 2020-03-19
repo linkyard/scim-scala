@@ -1,10 +1,10 @@
 package scim.spi
 
 import scim.model.{Filter, SearchRequest, User}
+import fs2.Stream
 
 trait UserStore[F[_]] {
-
-  def search(filter: Filter, sorting: Option[Sorting]): Seq[User]
+  def search(filter: Filter, sorting: Option[Sorting]): Stream[F, User]
 
 }
 

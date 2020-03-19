@@ -4,12 +4,19 @@ import io.circe.{DecodingFailure, Encoder, Json}
 import io.circe.syntax._
 import io.circe.generic.auto._
 import scim.model.Error
-import scim.json.Codecs._
+import scim.model.Codecs._
 
-case class Response(status: Int, body: Option[Json] = None, locationHeader: Option[String] = None)
+case class Response(status: Int, body: Option[Json] = None, locationHeader: Option[String] = None) {
+  def headers: Map[String, String] = {
+    locationHeader.map(v => Map("Location" -> v)).toSeq
+      .fold(Response.defaultHeaders)(_ ++ _)
+  }
+}
 
 object Response {
   def apply(status: Int, body: Json): Response = Response(status, Some(body))
+
+  private val defaultHeaders = Map("Content-Type" -> "application/scim+json")
 
   def error(error: Error): Response = Response(error.status, error.asJson)
   def notFound: Response = error(Error(404, detail = Some("Resource not found")))
