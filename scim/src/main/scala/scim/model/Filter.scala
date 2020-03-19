@@ -80,13 +80,13 @@ object Filter {
   private object Parser {
     import fastparse._, NoWhitespace._
 
-    // TODO remove
-    implicit val logger: Logger = Logger.stdout
-
     def apply(string: String): Either[String, Filter] = {
-      fastparse.parse(string, completeFilter(_), verboseFailures = true) match {
-        case Parsed.Success(value, index) => Right(value)
-        case failure: Parsed.Failure => Left(failure.longMsg)
+      if (string.trim.isEmpty) Right(NoFilter)
+      else {
+        fastparse.parse(string, completeFilter(_), verboseFailures = true) match {
+          case Parsed.Success(value, index) => Right(value)
+          case failure: Parsed.Failure => Left(failure.longMsg)
+        }
       }
     }
 
@@ -166,19 +166,27 @@ object Filter {
         case "le" => (p, v) => Comparison.LessThanOrEqual(p, v)
       }
     def compValue[_: P]: P[Json] = P(`false` | `null` | `true` | number | string)
-    def logExp[_: P]: P[LogicalOperation] = P(filter ~ space ~ (P("and").log("and").map(_ => And) | P("or").log("or").map(_ => Or)) ~ space ~ filter).log
-      .map { case (a, comb, b) => comb(a, b) }
-    def attrExpPresent[_: P]: P[Comparison] = P(attrPath ~ space ~ "pr").map(attrPath => Comparison.Present(attrPath)).log
+
+
+    def attrExpPresent[_: P]: P[Comparison] = P(attrPath ~ space ~ "pr").map(attrPath => Comparison.Present(attrPath))
     def attrExpCompare[_: P]: P[Comparison] = (attrPath ~ space ~ compareOp ~ space ~ compValue).map { case (path, op, value) => op(path, value) }
     def attrExp[_: P]: P[Comparison] = P(attrExpPresent | attrExpCompare)
-    def parensExp[_: P]: P[AFilter] = P(("not".!.? ~ space.? ~ "(" ~ valFilter ~ ")")).map {
+    def parensExp[_: P]: P[AFilter] = P(("not ".!.? ~ "(" ~/ filter ~ ")")).map {
       case (Some(_), filter) => Not(filter)
       case (None, filter) => filter
     }
-    def valFilter[_: P]: P[AFilter] = P(logExp | parensExp | attrExp).log
     def valuePath[_: P]: P[ComplexAttributeFilter] = P(attrPath ~ "[" ~ valFilter ~ "]").map { case (path, filter) => ComplexAttributeFilter(path, filter) }
-    def filter[_: P]: P[AFilter] = P(parensExp | attrExp | logExp | valuePath).log
+    def logicalOperator[_: P]: P[(AFilter, AFilter) => LogicalOperation] = (P("and").map(_ => And) | P("or").map(_ => Or))
+
+    def valFilter[_: P]: P[AFilter] = P((parensExp | attrExp) ~ (space ~ logicalOperator ~ space ~ valFilter).?).map {
+      case (a, None) => a
+      case (a, Some((op, b))) => op(a, b)
+    }
+    def filter[_: P]: P[AFilter] = P((parensExp | valuePath | attrExp) ~ (space ~ logicalOperator ~ space ~ filter).?).map {
+      case (a, None) => a
+      case (a, Some((op, b))) => op(a, b)
+    }
+
     def completeFilter[_: P]: P[AFilter] = P(Start ~ filter ~ End)
-    //    def completeFilter[_: P]: P[AFilter] = P(Start ~ logExp ~ End)
   }
 }

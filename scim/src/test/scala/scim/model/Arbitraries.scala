@@ -2,9 +2,9 @@ package scim.model
 
 import java.net.URI
 import io.circe.Json
-import org.scalacheck.ScalacheckShapeless._
 import org.scalacheck.{Arbitrary, Gen}
-import scim.model.Filter.{AFilter, AttributePath, Comparison, LogicalOperation, NoFilter}
+import scim.model.Filter.Comparison.{Contains, EndsWith, Equal, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual, NotEqual, Present, StartsWith}
+import scim.model.Filter.{AFilter, And, AttributePath, Comparison, ComplexAttributeFilter, LogicalOperation, NoFilter, Or}
 
 object Arbitraries {
   implicit def json: Arbitrary[Json] = Arbitrary(Gen.frequency(
@@ -30,15 +30,59 @@ object Arbitraries {
     subPath <- Gen.oneOf(Gen.const(None), attributeName.arbitrary.map(Some.apply))
   } yield AttributePath(name, uri, subPath))
 
-  implicit def filter: Arbitrary[Filter] = Arbitrary(Gen.oneOf(
-    aFilter.arbitrary,
-    Gen.const(NoFilter),
-  ))
+  implicit def comparison: Arbitrary[Comparison] = Arbitrary(for {
+    path <- attributePath.arbitrary
+    value <- json.arbitrary
+    op <- Gen.oneOf(Seq(
+      Equal.apply _, NotEqual.apply _, Contains.apply _,
+      StartsWith.apply _, EndsWith.apply _,
+      GreaterThan.apply _, GreaterThanOrEqual.apply _,
+      LessThan.apply _, LessThanOrEqual.apply _,
+      //      (p, _: Json) => Present(p)
+    ))
+  } yield op(path, value))
 
-  implicit def aFilter: Arbitrary[AFilter] = Arbitrary(Gen.oneOf(
-    implicitly[Arbitrary[LogicalOperation]].arbitrary,
-    implicitly[Arbitrary[LogicalOperation]].arbitrary,
-    implicitly[Arbitrary[Comparison]].arbitrary,
-  ))
+  implicit def logicalOperation: Arbitrary[LogicalOperation] = Arbitrary(for {
+    a <- aSimpleFilter.arbitrary
+    b <- aSimpleFilter.arbitrary
+    op <- Gen.oneOf(Seq(And.apply _, Or.apply _))
+  } yield And(a, b))
 
+  implicit def complexAttributeFilter: Arbitrary[ComplexAttributeFilter] = Arbitrary(for {
+    path <- attributePath.arbitrary
+    aValueFilter <- aValueFilter.arbitrary
+  } yield ComplexAttributeFilter(path, aValueFilter))
+
+  implicit def aSimpleFilter: Arbitrary[AFilter] = {
+    Arbitrary(Gen.frequency(
+      (1, complexAttributeFilter.arbitrary),
+      (2, comparison.arbitrary),
+    ))
+  }
+
+  implicit def aValueFilter: Arbitrary[AFilter] = {
+    implicit def log: Arbitrary[LogicalOperation] = Arbitrary(for {
+      a <- comparison.arbitrary
+      b <- comparison.arbitrary
+      op <- Gen.oneOf(Seq(And.apply _, Or.apply _))
+    } yield And(a, b))
+
+    Arbitrary(Gen.frequency(
+      (1, log.arbitrary),
+      (3, comparison.arbitrary),
+    ))
+  }
+
+  implicit def aFilter: Arbitrary[AFilter] = {
+    Arbitrary(Gen.frequency(
+      (1, logicalOperation.arbitrary),
+      (2, complexAttributeFilter.arbitrary),
+      (4, aSimpleFilter.arbitrary),
+    ))
+  }
+
+  implicit def filter: Arbitrary[Filter] = Arbitrary(Gen.frequency(
+    20 -> aFilter.arbitrary,
+    1 -> Gen.const(NoFilter),
+  ))
 }
