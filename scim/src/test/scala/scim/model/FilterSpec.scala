@@ -8,7 +8,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.Checkers
 import scim.model.Arbitraries._
-import scim.model.Filter.{And, AttributePath, Comparison, ComplexAttributeFilter, Not, Or}
+import scim.model.Filter.{And, AttributePath, Comparison, ComplexAttributeFilter, Not, Or, StringValue, Value}
 
 class FilterSpec extends AnyFunSpec with Checkers with Matchers {
 
@@ -36,7 +36,7 @@ class FilterSpec extends AnyFunSpec with Checkers with Matchers {
         }
       }
 
-      implicit def stringToJson(s: String): Json = Json.fromString(s)
+      implicit def stringToValue(s: String): Value = StringValue(s)
 
       it("should parse simple eq filter") {
         val r = parseSuccessful("userName eq \"bjensen\"")

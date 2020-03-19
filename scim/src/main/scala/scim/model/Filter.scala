@@ -34,37 +34,35 @@ object Filter {
 
   sealed trait Comparison extends AFilter
   object Comparison {
-    private def renderJson(json: Json): String = json.spaces2
-
-    case class Equal(attributePath: AttributePath, value: Json) extends Comparison {
-      def render = s"${attributePath.render} eq ${renderJson(value)}"
+    case class Equal(attributePath: AttributePath, value: Value) extends Comparison {
+      def render = s"${attributePath.render} eq ${value.render}"
     }
-    case class NotEqual(attributePath: AttributePath, value: Json) extends Comparison {
-      def render = s"${attributePath.render} ne ${renderJson(value)}"
+    case class NotEqual(attributePath: AttributePath, value: Value) extends Comparison {
+      def render = s"${attributePath.render} ne ${value.render}"
     }
-    case class Contains(attributePath: AttributePath, value: Json) extends Comparison {
-      def render = s"${attributePath.render} co ${renderJson(value)}"
+    case class Contains(attributePath: AttributePath, value: Value) extends Comparison {
+      def render = s"${attributePath.render} co ${value.render}"
     }
-    case class StartsWith(attributePath: AttributePath, value: Json) extends Comparison {
-      def render = s"${attributePath.render} sw ${renderJson(value)}"
+    case class StartsWith(attributePath: AttributePath, value: Value) extends Comparison {
+      def render = s"${attributePath.render} sw ${value.render}"
     }
-    case class EndsWith(attributePath: AttributePath, value: Json) extends Comparison {
-      def render = s"${attributePath.render} ew ${renderJson(value)}"
+    case class EndsWith(attributePath: AttributePath, value: Value) extends Comparison {
+      def render = s"${attributePath.render} ew ${value.render}"
     }
     case class Present(attributePath: AttributePath) extends Comparison {
       def render = s"${attributePath.render} pr"
     }
-    case class GreaterThan(attributePath: AttributePath, value: Json) extends Comparison {
-      def render = s"${attributePath.render} gt ${renderJson(value)}"
+    case class GreaterThan(attributePath: AttributePath, value: Value) extends Comparison {
+      def render = s"${attributePath.render} gt ${value.render}"
     }
-    case class GreaterThanOrEqual(attributePath: AttributePath, value: Json) extends Comparison {
-      def render = s"${attributePath.render} ge ${renderJson(value)}"
+    case class GreaterThanOrEqual(attributePath: AttributePath, value: Value) extends Comparison {
+      def render = s"${attributePath.render} ge ${value.render}"
     }
-    case class LessThan(attributePath: AttributePath, value: Json) extends Comparison {
-      def render = s"${attributePath.render} lt ${renderJson(value)}"
+    case class LessThan(attributePath: AttributePath, value: Value) extends Comparison {
+      def render = s"${attributePath.render} lt ${value.render}"
     }
-    case class LessThanOrEqual(attributePath: AttributePath, value: Json) extends Comparison {
-      def render = s"${attributePath.render} le ${renderJson(value)}"
+    case class LessThanOrEqual(attributePath: AttributePath, value: Value) extends Comparison {
+      def render = s"${attributePath.render} le ${value.render}"
     }
   }
 
@@ -74,6 +72,22 @@ object Filter {
 
   case class AttributePath(name: String, uri: Option[URI] = None, subAttribute: Option[String] = None) {
     def render: String = uri.map(_.toString + ":").getOrElse("") + name + subAttribute.map("." + _).getOrElse("")
+  }
+
+  sealed trait Value {
+    def render: String
+  }
+  case class StringValue(value: String) extends Value {
+    def render: String = Json.fromString(value).noSpaces
+  }
+  case class NumberValue(value: Double) extends Value {
+    def render: String = Json.fromDoubleOrString(value).noSpaces
+  }
+  case class BooleanValue(value: Boolean) extends Value {
+    def render: String = if (value) "true" else "false"
+  }
+  case object NullValue extends Value {
+    def render = "null"
   }
 
 
@@ -133,28 +147,28 @@ object Filter {
       .map(_.getOrElse(throw new AssertionError("error in uri parser")))
 
     // Json Types
-    def `null`[_: P] = P("null").map(_ => Json.Null)
-    def `false`[_: P] = P("false").map(_ => Json.False)
-    def `true`[_: P] = P("true").map(_ => Json.True)
+    def `null`[_: P] = P("null").map(_ => NullValue)
+    def `false`[_: P] = P("false").map(_ => BooleanValue(false))
+    def `true`[_: P] = P("true").map(_ => BooleanValue(true))
     def digits[_: P] = P(CharsWhileIn("0-9"))
     def exponent[_: P] = P(CharIn("eE") ~ CharIn("+\\-").? ~ digits)
     def fractional[_: P] = P("." ~ digits)
     def integral[_: P] = P("0" | CharIn("1-9") ~ digits.?)
-    def number[_: P] = P(CharIn("+\\-").? ~ integral ~ fractional.? ~ exponent.?).!.map(x => Json.fromDouble(x.toDouble).get)
+    def number[_: P] = P(CharIn("+\\-").? ~ integral ~ fractional.? ~ exponent.?).!.map(_.toDouble).map(NumberValue)
     def stringChars(c: Char) = c != '\"' && c != '\\'
     def space[_: P] = P(CharsWhileIn(" \r\n", 0))
     def strChars[_: P] = P(CharsWhile(stringChars))
     def hexDigit[_: P] = P(CharIn("0-9a-fA-F"))
     def unicodeEscape[_: P] = P("u" ~ hexDigit ~ hexDigit ~ hexDigit ~ hexDigit)
     def escape[_: P] = P("\\" ~ (CharIn("\"/\\\\bfnrt") | unicodeEscape))
-    def string[_: P] = P(space ~ "\"" ~/ (strChars | escape).rep.! ~ "\"").map(Json.fromString)
+    def string[_: P] = P(space ~ "\"" ~/ (strChars | escape).rep.! ~ "\"").map(StringValue)
 
     def nameChar[_: P] = P(CharIn("\\-_").! | digit | alpha)
     def attrname[_: P] = P((alpha ~ nameChar.rep).!)
     def subattr[_: P] = P("." ~ attrname)
     def attrPath[_: P] = P((uriPrefix ~ ":").? ~ attrname ~ subattr.?).map(v => AttributePath(v._2, v._1, v._3))
     def compareOp[_: P] = P(StringIn("eq", "ne", "co", "sw", "ew", "gt", "lt", "ge", "le")).!
-      .map[(AttributePath, Json) => Comparison] {
+      .map[(AttributePath, Value) => Comparison] {
         case "eq" => (p, v) => Comparison.Equal(p, v)
         case "ne" => (p, v) => Comparison.NotEqual(p, v)
         case "co" => (p, v) => Comparison.Contains(p, v)
@@ -165,7 +179,7 @@ object Filter {
         case "lt" => (p, v) => Comparison.LessThan(p, v)
         case "le" => (p, v) => Comparison.LessThanOrEqual(p, v)
       }
-    def compValue[_: P]: P[Json] = P(`false` | `null` | `true` | number | string)
+    def compValue[_: P]: P[Value] = P(`false` | `null` | `true` | number | string)
 
 
     def attrExpPresent[_: P]: P[Comparison] = P(attrPath ~ space ~ "pr").map(attrPath => Comparison.Present(attrPath))

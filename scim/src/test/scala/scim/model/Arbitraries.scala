@@ -4,13 +4,15 @@ import java.net.URI
 import io.circe.Json
 import org.scalacheck.{Arbitrary, Gen}
 import scim.model.Filter.Comparison.{Contains, EndsWith, Equal, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual, NotEqual, Present, StartsWith}
-import scim.model.Filter.{AFilter, And, AttributePath, Comparison, ComplexAttributeFilter, LogicalOperation, NoFilter, Or}
+import scim.model.Filter.{AFilter, And, AttributePath, BooleanValue, Comparison, ComplexAttributeFilter, LogicalOperation, NoFilter, NullValue, NumberValue,
+  Or, StringValue, Value}
 
 object Arbitraries {
-  implicit def json: Arbitrary[Json] = Arbitrary(Gen.frequency(
-    (1, Gen.const(Json.Null)),
-    (3, implicitly[Arbitrary[Double]].arbitrary.map(Json.fromDoubleOrString)),
-    (10, Gen.alphaNumStr.map(Json.fromString)),
+  implicit def value: Arbitrary[Value] = Arbitrary(Gen.frequency(
+    (1, Gen.const(NullValue)),
+    (2, implicitly[Arbitrary[Boolean]].arbitrary.map(BooleanValue)),
+    (5, implicitly[Arbitrary[Double]].arbitrary.map(NumberValue)),
+    (10, Gen.alphaNumStr.map(StringValue)),
   ))
 
   def schemaUri: Arbitrary[URI] = Arbitrary(Gen.frequency(
@@ -32,13 +34,12 @@ object Arbitraries {
 
   implicit def comparison: Arbitrary[Comparison] = Arbitrary(for {
     path <- attributePath.arbitrary
-    value <- json.arbitrary
+    value <- value.arbitrary
     op <- Gen.oneOf(Seq(
       Equal.apply _, NotEqual.apply _, Contains.apply _,
       StartsWith.apply _, EndsWith.apply _,
       GreaterThan.apply _, GreaterThanOrEqual.apply _,
       LessThan.apply _, LessThanOrEqual.apply _,
-      //      (p, _: Json) => Present(p)
     ))
   } yield op(path, value))
 
