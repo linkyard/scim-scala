@@ -8,7 +8,7 @@ import io.circe.{Decoder, Json, JsonNumber}
 sealed trait Filter {
   def evaluate(on: Json, defaultSchema: Schema): Boolean
 
-  /** use on root only, extracts to schema */
+  /** use on root only, extracts the default schema */
   def evaluate(on: Json): Boolean = {
     val schema = on.hcursor.downField("schemas").as[Seq[String]].toOption.flatMap(_.headOption)
       .flatMap(a => Schema.parse(a).toOption)
