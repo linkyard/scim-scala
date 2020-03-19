@@ -2,7 +2,7 @@ package scim.model
 
 import java.net.URI
 import scala.util.Try
-import io.circe.Json
+import io.circe.{Decoder, Json, JsonNumber}
 
 /** RFC 7644 - 3.4.2.2. */
 sealed trait Filter {
@@ -101,7 +101,11 @@ object Filter {
   }
 
   case class ComplexAttributeFilter(attributePath: AttributePath, filter: AFilter) extends AFilter {
-    def evaluate(on: Json, defaultSchema: Schema): Boolean = filter.evaluate(attributePath.extract(on, defaultSchema), defaultSchema)
+    def evaluate(on: Json, defaultSchema: Schema): Boolean = {
+      val value = attributePath.extract(on, defaultSchema)
+      value.asArray.getOrElse(Vector(value))
+        .exists(v => filter.evaluate(v, defaultSchema))
+    }
     def render = s"${attributePath.render}[${filter.render}]"
   }
 
@@ -111,8 +115,10 @@ object Filter {
       val base = schema.filter(_ != defaultSchema).map(_.asString)
         .map(cursor.downField).getOrElse(cursor)
       val root = base.downField(name)
-      subAttribute.map(root.downField).getOrElse(root)
-        .focus.getOrElse(Json.Null)
+      subAttribute
+        .map(a => root.downField(a).focus.orElse(root.downArray.downField(a).focus))
+        .getOrElse(root.focus)
+        .getOrElse(Json.Null)
     }
     def render: String = schema.map(_.asString + ":").getOrElse("") + name + subAttribute.map("." + _).getOrElse("")
   }
@@ -125,32 +131,37 @@ object Filter {
     def isGreaterThan(other: Json): Boolean
     def isLessThan(other: Json): Boolean
     def render: String
-  }
-  case class StringValue(value: String) extends Value {
-    def isEqualTo(other: Json): Boolean = valueOf(other).contains(value)
-    def isContainedIn(other: Json): Boolean = valueOf(other).exists(_.contains(value))
-    def isPrefixOf(other: Json): Boolean = valueOf(other).exists(_.startsWith(value))
-    def isSuffixOf(other: Json): Boolean = valueOf(other).exists(_.endsWith(value))
-    def isGreaterThan(other: Json): Boolean = valueOf(other).exists(_.compareTo(value) < 0)
-    def isLessThan(other: Json): Boolean = valueOf(other).exists(_.compareTo(value) > 0)
-    def render: String = Json.fromString(value).noSpaces
-    private def valueOf(other: Json): Option[String] = {
-      other.asString
-        //single element array
-        .orElse(other.as[Seq[String]].toOption.filter(_.size == 1).flatMap(_.headOption))
+
+    protected def valueOf[X: Decoder](from: Json): Iterable[X] = {
+      from.as[Seq[X]].toOption
+        .orElse(from.as[X].toOption.map(Seq(_)))
+        .getOrElse(Seq.empty)
     }
   }
+  case class StringValue(value: String) extends Value {
+    def isEqualTo(other: Json): Boolean = stringValue(other).exists(_ == value)
+    def isContainedIn(other: Json): Boolean = stringValue(other).exists(_.contains(value))
+    def isPrefixOf(other: Json): Boolean = stringValue(other).exists(_.startsWith(value))
+    def isSuffixOf(other: Json): Boolean = stringValue(other).exists(_.endsWith(value))
+    def isGreaterThan(other: Json): Boolean = stringValue(other).exists(_.compareTo(value) < 0)
+    def isLessThan(other: Json): Boolean = stringValue(other).exists(_.compareTo(value) > 0)
+    private def stringValue(from: Json) = valueOf[String](from)
+
+    def render: String = Json.fromString(value).noSpaces
+  }
   case class NumberValue(value: Double) extends Value {
-    def isEqualTo(other: Json): Boolean = other == Json.fromDoubleOrNull(value)
+    def isEqualTo(other: Json): Boolean = valueOf[Json](other).exists(_ == Json.fromDoubleOrNull(value))
     def isContainedIn(other: Json): Boolean = false
     def isPrefixOf(other: Json): Boolean = false
     def isSuffixOf(other: Json): Boolean = false
-    def isGreaterThan(other: Json): Boolean = other.asNumber.map(_.toDouble).exists(_.compareTo(value) < 0)
-    def isLessThan(other: Json): Boolean = other.asNumber.map(_.toDouble).exists(_.compareTo(value) > 0)
+    def isGreaterThan(other: Json): Boolean = doubleValue(other).exists(_.compareTo(value) < 0)
+    def isLessThan(other: Json): Boolean = doubleValue(other).exists(_.compareTo(value) > 0)
+    private def doubleValue(from: Json) = valueOf[Double](from)
+
     def render: String = Json.fromDoubleOrString(value).noSpaces
   }
   case class BooleanValue(value: Boolean) extends Value {
-    def isEqualTo(other: Json): Boolean = other.asBoolean.contains(value)
+    def isEqualTo(other: Json): Boolean = valueOf[Boolean](other).exists(_ == value)
     def isContainedIn(other: Json): Boolean = false
     def isPrefixOf(other: Json): Boolean = false
     def isSuffixOf(other: Json): Boolean = false
@@ -245,7 +256,8 @@ object Filter {
     def attrname[_: P] = P((alpha ~ nameChar.rep).!)
     def subattr[_: P] = P("." ~ attrname)
     def attrPath[_: P] = P((uriPrefix ~ ":").? ~ attrname ~ subattr.?).map(v => AttributePath(v._2, v._1.map(Schema.apply), v._3))
-    def compareOp[_: P] = P(StringIn("eq", "ne", "co", "sw", "ew", "gt", "lt", "ge", "le")).!
+    def compareOp[_: P] = P(StringInIgnoreCase("eq", "ne", "co", "sw", "ew", "gt", "lt", "ge", "le")).!
+      .map(_.toLowerCase)
       .map[(AttributePath, Value) => Comparison] {
         case "eq" => (p, v) => Comparison.Equal(p, v)
         case "ne" => (p, v) => Comparison.NotEqual(p, v)
@@ -260,15 +272,15 @@ object Filter {
     def compValue[_: P]: P[Value] = P(`false` | `null` | `true` | number | string)
 
 
-    def attrExpPresent[_: P]: P[Comparison] = P(attrPath ~ space ~ "pr").map(attrPath => Comparison.Present(attrPath))
+    def attrExpPresent[_: P]: P[Comparison] = P(attrPath ~ space ~ IgnoreCase("pr")).map(attrPath => Comparison.Present(attrPath))
     def attrExpCompare[_: P]: P[Comparison] = (attrPath ~ space ~ compareOp ~ space ~ compValue).map { case (path, op, value) => op(path, value) }
     def attrExp[_: P]: P[Comparison] = P(attrExpPresent | attrExpCompare)
-    def parensExp[_: P]: P[AFilter] = P(("not ".!.? ~ "(" ~/ filter ~ ")")).map {
+    def parensExp[_: P]: P[AFilter] = P(((IgnoreCase("not") ~ space).!.? ~ "(" ~/ filter ~ ")")).map {
       case (Some(_), filter) => Not(filter)
       case (None, filter) => filter
     }
     def valuePath[_: P]: P[ComplexAttributeFilter] = P(attrPath ~ "[" ~ valFilter ~ "]").map { case (path, filter) => ComplexAttributeFilter(path, filter) }
-    def logicalOperator[_: P]: P[(AFilter, AFilter) => LogicalOperation] = (P("and").map(_ => And) | P("or").map(_ => Or))
+    def logicalOperator[_: P]: P[(AFilter, AFilter) => LogicalOperation] = (P(IgnoreCase("and")).map(_ => And) | P(IgnoreCase("or")).map(_ => Or))
 
     def valFilter[_: P]: P[AFilter] = P((parensExp | attrExp) ~ (space ~ logicalOperator ~ space ~ valFilter).?).map {
       case (a, None) => a

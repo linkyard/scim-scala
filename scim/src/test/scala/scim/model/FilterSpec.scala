@@ -388,26 +388,51 @@ class FilterSpec extends AnyFunSpec with Checkers with Matchers {
           .evaluate(Jsons.userFull) should be(false)
       }
       it("should evaluate an and/or combination with parens (positive)") {
-        parseSuccessful("userType eq \"Employee\" and (emails co \"example.com\" or emails.value co \"example.org\")")
+        parseSuccessful("userType eq \"Employee\" and (emails.value co \"example.com\" or emails.value co \"example.org\")")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("userType eq \"Employee\" and (emails.value co \"acme.com\" or emails.value co \"example.com\")")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("userType eq \"Employee\" and (emails.value co \"example.com\" or emails.value co \"example.org\")")
           .evaluate(Jsons.userFull) should be(true)
       }
       it("should evaluate an and/or combination with parens (negative)") {
-        parseSuccessful("userType eq \"Manager\" and (emails co \"example.com\" or emails.value co \"example.org\")")
+        parseSuccessful("userType eq \"Manager\" and (emails.value co \"example.com\" or emails.value co \"example.org\")")
           .evaluate(Jsons.userFull) should be(false)
-        parseSuccessful("userType eq \"Employee\" and (emails co \"acme.com\" or emails.value co \"acme.org\")")
+        parseSuccessful("userType eq \"Employee\" and (emails.value co \"acme.com\" or emails.value co \"acme.org\")")
           .evaluate(Jsons.userFull) should be(false)
-        parseSuccessful("userType eq \"Employee\" and (emails co \"acme.com\" or emails.value co \"example.org\")")
+        parseSuccessful("userType eq \"Employee\" and (emails.value co \"acme.com\" or emails.value co \"example.x\")")
           .evaluate(Jsons.userFull) should be(false)
       }
 
       it("should evaluate eq on single element array (positive)") {
-        val filter = parseSuccessful("schemas eq \"urn:ietf:params:scim:schemas:core:2.0:User\"")
-        filter.evaluate(Jsons.userMinimal) should be(true)
+        parseSuccessful("schemas eq \"urn:ietf:params:scim:schemas:core:2.0:User\"")
+          .evaluate(Jsons.userMinimal) should be(true)
+        parseSuccessful("schemas eq \"urn:ietf:params:scim:schemas:extension:enterprise:2.0:User\"")
+          .evaluate(Jsons.userFull) should be(true)
       }
       it("should evaluate eq on single element array (negative)") {
         parseSuccessful("schemas eq \"urn:ietf:params:scim:schemas:core:2.0:Group\"")
           .evaluate(Jsons.userMinimal) should be(false)
-        parseSuccessful("schemas eq \"urn:ietf:params:scim:schemas:core:2.0:User\"")
+        parseSuccessful("schemas eq \"urn:ietf:params:scim:schemas:extension:enterprise:2.0:User\"")
+          .evaluate(Jsons.userMinimal) should be(false)
+        parseSuccessful("bla eq \"urn:ietf:params:scim:schemas:core:2.0:User\"")
+          .evaluate(Jsons.userMinimal) should be(false)
+      }
+
+      it("should evaluate complex value filter (positive)") {
+        parseSuccessful("userType eq \"Employee\" and emails[type eq \"work\" and value co \"@example.com\"]")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("userType eq \"Employee\" and emails[type eq \"home\" and value co \"@jensen.org\"]")
+          .evaluate(Jsons.userFull) should be(true)
+      }
+      it("should evaluate complex value filter (negative)") {
+        parseSuccessful("userType eq \"Manager\" and emails[type eq \"work\" and value co \"@example.com\"]")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("userType eq \"Employee\" and emails[type eq \"work\" and value co \"@example.com\"]")
+          .evaluate(Jsons.userMinimal) should be(false)
+        parseSuccessful("userType eq \"Employee\" and emails[type eq \"work\" and value co \"@example.org\"]")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("userType eq \"Employee\" and emails[type eq \"home\" and value co \"@example.com\"]")
           .evaluate(Jsons.userFull) should be(false)
       }
     }
