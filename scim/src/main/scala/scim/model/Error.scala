@@ -5,4 +5,4 @@ case class Error(
   status: Int,
   detail: Option[String],
   scimType: Option[String] = None,
-  schemas: Seq[String] = Seq("urn:ietf:params:scim:api:messages:2.0:Error")) extends Root
+  schemas: Seq[Schema] = Seq(Schema.Error)) extends Root

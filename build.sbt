@@ -45,6 +45,7 @@ lazy val scim = (project in file("scim"))
       "co.fs2" %% "fs2-core" % Dependencies.fs2,
       "io.circe" %% "circe-generic" % Dependencies.circe,
       "com.lihaoyi" %% "fastparse" % Dependencies.fastParse,
+      "io.circe" %% "circe-parser" % Dependencies.circe % Test,
     ),
     libraryDependencies ++= Dependencies.logBinding,
   )

@@ -2,11 +2,20 @@ package scim.model
 
 import java.net.URI
 import scala.util.Try
-import fastparse.internal.Logger
 import io.circe.Json
 
 /** RFC 7644 - 3.4.2.2. */
 sealed trait Filter {
+  def evaluate(on: Json, defaultSchema: Schema): Boolean
+
+  /** use on root only, extracts to schema */
+  def evaluate(on: Json): Boolean = {
+    val schema = on.hcursor.downField("schemas").as[Seq[String]].toOption.flatMap(_.headOption)
+      .flatMap(a => Schema.parse(a).toOption)
+      .getOrElse(Schema.default)
+    evaluate(on, schema)
+  }
+
   def render: String
   def asString: String = render
 }
@@ -18,81 +27,150 @@ object Filter {
 
   sealed trait AFilter extends Filter
   case object NoFilter extends Filter {
+    def evaluate(on: Json, defaultSchema: Schema): Boolean = true
     def render = ""
   }
 
   sealed trait LogicalOperation extends AFilter
   case class And(a: AFilter, b: AFilter) extends LogicalOperation {
+    def evaluate(on: Json, defaultSchema: Schema): Boolean =
+      a.evaluate(on, defaultSchema) && b.evaluate(on, defaultSchema)
     def render = s"${a.render} and ${b.render}"
   }
   case class Or(a: AFilter, b: AFilter) extends LogicalOperation {
+    def evaluate(on: Json, defaultSchema: Schema): Boolean =
+      a.evaluate(on, defaultSchema) || b.evaluate(on, defaultSchema)
     def render = s"${a.render} or ${b.render}"
   }
   case class Not(a: AFilter) extends LogicalOperation {
+    def evaluate(on: Json, defaultSchema: Schema): Boolean = !a.evaluate(on, defaultSchema)
     def render = s"not (${a.render})"
   }
 
-  sealed trait Comparison extends AFilter
+  sealed trait Comparison extends AFilter {
+    def attributePath: AttributePath
+    def attributeValue(on: Json, defaultSchema: Schema): Json = attributePath.extract(on, defaultSchema)
+  }
   object Comparison {
     case class Equal(attributePath: AttributePath, value: Value) extends Comparison {
+      def evaluate(on: Json, defaultSchema: Schema): Boolean = value.isEqualTo(attributeValue(on, defaultSchema))
       def render = s"${attributePath.render} eq ${value.render}"
     }
     case class NotEqual(attributePath: AttributePath, value: Value) extends Comparison {
+      def evaluate(on: Json, defaultSchema: Schema): Boolean = !value.isEqualTo(attributeValue(on, defaultSchema))
       def render = s"${attributePath.render} ne ${value.render}"
     }
     case class Contains(attributePath: AttributePath, value: Value) extends Comparison {
+      def evaluate(on: Json, defaultSchema: Schema): Boolean = value.isContainedIn(attributeValue(on, defaultSchema))
       def render = s"${attributePath.render} co ${value.render}"
     }
     case class StartsWith(attributePath: AttributePath, value: Value) extends Comparison {
+      def evaluate(on: Json, defaultSchema: Schema): Boolean = value.isPrefixOf(attributeValue(on, defaultSchema))
       def render = s"${attributePath.render} sw ${value.render}"
     }
     case class EndsWith(attributePath: AttributePath, value: Value) extends Comparison {
+      def evaluate(on: Json, defaultSchema: Schema): Boolean = value.isSuffixOf(attributeValue(on, defaultSchema))
       def render = s"${attributePath.render} ew ${value.render}"
     }
     case class Present(attributePath: AttributePath) extends Comparison {
+      def evaluate(on: Json, defaultSchema: Schema): Boolean = !attributeValue(on, defaultSchema).isNull
       def render = s"${attributePath.render} pr"
     }
     case class GreaterThan(attributePath: AttributePath, value: Value) extends Comparison {
+      def evaluate(on: Json, defaultSchema: Schema): Boolean = value.isLessThan(attributeValue(on, defaultSchema))
       def render = s"${attributePath.render} gt ${value.render}"
     }
     case class GreaterThanOrEqual(attributePath: AttributePath, value: Value) extends Comparison {
+      def evaluate(on: Json, defaultSchema: Schema): Boolean = {
+        val v = attributeValue(on, defaultSchema)
+        value.isLessThan(v) || value.isEqualTo(v)
+      }
       def render = s"${attributePath.render} ge ${value.render}"
     }
     case class LessThan(attributePath: AttributePath, value: Value) extends Comparison {
+      def evaluate(on: Json, defaultSchema: Schema): Boolean = value.isGreaterThan(attributeValue(on, defaultSchema))
       def render = s"${attributePath.render} lt ${value.render}"
     }
     case class LessThanOrEqual(attributePath: AttributePath, value: Value) extends Comparison {
+      def evaluate(on: Json, defaultSchema: Schema): Boolean = {
+        val v = attributeValue(on, defaultSchema)
+        value.isGreaterThan(v) || value.isEqualTo(v)
+      }
       def render = s"${attributePath.render} le ${value.render}"
     }
   }
 
   case class ComplexAttributeFilter(attributePath: AttributePath, filter: AFilter) extends AFilter {
+    def evaluate(on: Json, defaultSchema: Schema): Boolean = filter.evaluate(attributePath.extract(on, defaultSchema), defaultSchema)
     def render = s"${attributePath.render}[${filter.render}]"
   }
 
-  case class AttributePath(name: String, uri: Option[URI] = None, subAttribute: Option[String] = None) {
-    def render: String = uri.map(_.toString + ":").getOrElse("") + name + subAttribute.map("." + _).getOrElse("")
+  case class AttributePath(name: String, schema: Option[Schema] = None, subAttribute: Option[String] = None) {
+    def extract(from: Json, defaultSchema: Schema): Json = {
+      val cursor = from.hcursor
+      val base = schema.filter(_ != defaultSchema).map(_.asString)
+        .map(cursor.downField).getOrElse(cursor)
+      val root = base.downField(name)
+      subAttribute.map(root.downField).getOrElse(root)
+        .focus.getOrElse(Json.Null)
+    }
+    def render: String = schema.map(_.asString + ":").getOrElse("") + name + subAttribute.map("." + _).getOrElse("")
   }
 
   sealed trait Value {
+    def isEqualTo(other: Json): Boolean
+    def isContainedIn(other: Json): Boolean
+    def isPrefixOf(other: Json): Boolean
+    def isSuffixOf(other: Json): Boolean
+    def isGreaterThan(other: Json): Boolean
+    def isLessThan(other: Json): Boolean
     def render: String
   }
   case class StringValue(value: String) extends Value {
+    def isEqualTo(other: Json): Boolean = valueOf(other).contains(value)
+    def isContainedIn(other: Json): Boolean = valueOf(other).exists(_.contains(value))
+    def isPrefixOf(other: Json): Boolean = valueOf(other).exists(_.startsWith(value))
+    def isSuffixOf(other: Json): Boolean = valueOf(other).exists(_.endsWith(value))
+    def isGreaterThan(other: Json): Boolean = valueOf(other).exists(_.compareTo(value) < 0)
+    def isLessThan(other: Json): Boolean = valueOf(other).exists(_.compareTo(value) > 0)
     def render: String = Json.fromString(value).noSpaces
+    private def valueOf(other: Json): Option[String] = {
+      other.asString
+        //single element array
+        .orElse(other.as[Seq[String]].toOption.filter(_.size == 1).flatMap(_.headOption))
+    }
   }
   case class NumberValue(value: Double) extends Value {
+    def isEqualTo(other: Json): Boolean = other == Json.fromDoubleOrNull(value)
+    def isContainedIn(other: Json): Boolean = false
+    def isPrefixOf(other: Json): Boolean = false
+    def isSuffixOf(other: Json): Boolean = false
+    def isGreaterThan(other: Json): Boolean = other.asNumber.map(_.toDouble).exists(_.compareTo(value) < 0)
+    def isLessThan(other: Json): Boolean = other.asNumber.map(_.toDouble).exists(_.compareTo(value) > 0)
     def render: String = Json.fromDoubleOrString(value).noSpaces
   }
   case class BooleanValue(value: Boolean) extends Value {
+    def isEqualTo(other: Json): Boolean = other.asBoolean.contains(value)
+    def isContainedIn(other: Json): Boolean = false
+    def isPrefixOf(other: Json): Boolean = false
+    def isSuffixOf(other: Json): Boolean = false
+    def isGreaterThan(other: Json): Boolean = false
+    def isLessThan(other: Json): Boolean = false
     def render: String = if (value) "true" else "false"
   }
   case object NullValue extends Value {
+    def isEqualTo(other: Json): Boolean = other.isNull
+    def isContainedIn(other: Json): Boolean = false
+    def isPrefixOf(other: Json): Boolean = false
+    def isSuffixOf(other: Json): Boolean = false
+    def isGreaterThan(other: Json): Boolean = false
+    def isLessThan(other: Json): Boolean = false
     def render = "null"
   }
 
-
   private object Parser {
-    import fastparse._, NoWhitespace._
+    import fastparse._
+    import NoWhitespace._
 
     def apply(string: String): Either[String, Filter] = {
       if (string.trim.isEmpty) Right(NoFilter)
@@ -166,7 +244,7 @@ object Filter {
     def nameChar[_: P] = P(CharIn("\\-_").! | digit | alpha)
     def attrname[_: P] = P((alpha ~ nameChar.rep).!)
     def subattr[_: P] = P("." ~ attrname)
-    def attrPath[_: P] = P((uriPrefix ~ ":").? ~ attrname ~ subattr.?).map(v => AttributePath(v._2, v._1, v._3))
+    def attrPath[_: P] = P((uriPrefix ~ ":").? ~ attrname ~ subattr.?).map(v => AttributePath(v._2, v._1.map(Schema.apply), v._3))
     def compareOp[_: P] = P(StringIn("eq", "ne", "co", "sw", "ew", "gt", "lt", "ge", "le")).!
       .map[(AttributePath, Value) => Comparison] {
         case "eq" => (p, v) => Comparison.Equal(p, v)

@@ -4,6 +4,7 @@ import io.circe.{DecodingFailure, Encoder, Json}
 import io.circe.syntax._
 import io.circe.generic.auto._
 import scim.model.Error
+import scim.json.Codecs._
 
 case class Response(status: Int, body: Option[Json] = None, locationHeader: Option[String] = None)
 

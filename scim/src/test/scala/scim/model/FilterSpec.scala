@@ -1,16 +1,21 @@
 package scim.model
 
 import scala.language.implicitConversions
-import java.net.URI
-import io.circe.Json
 import org.scalacheck.ScalacheckShapeless._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.Checkers
 import scim.model.Arbitraries._
-import scim.model.Filter.{And, AttributePath, Comparison, ComplexAttributeFilter, Not, Or, StringValue, Value}
+import scim.model.Filter._
 
 class FilterSpec extends AnyFunSpec with Checkers with Matchers {
+
+  private def parseSuccessful(value: String): Filter = {
+    Filter.parse(value) match {
+      case Right(result) => result
+      case Left(error) => fail(s"parsing of '$value' failed: ${error}")
+    }
+  }
 
   describe("Filter") {
     describe("parse") {
@@ -27,13 +32,6 @@ class FilterSpec extends AnyFunSpec with Checkers with Matchers {
       it("should be left from invalid") {
         Filter.parse("bla").isLeft should be(true)
         Filter.parse("hube").isLeft should be(true)
-      }
-
-      def parseSuccessful(value: String): Filter = {
-        Filter.parse(value) match {
-          case Right(result) => result
-          case Left(error) => fail(s"parsing of '$value' failed: ${error}")
-        }
       }
 
       implicit def stringToValue(s: String): Value = StringValue(s)
@@ -57,7 +55,7 @@ class FilterSpec extends AnyFunSpec with Checkers with Matchers {
       it("should parse sw filter with uri") {
         val r = parseSuccessful("urn:ietf:params:scim:schemas:core:2.0:User:userName sw \"J\"")
         r should be(Comparison.StartsWith(
-          AttributePath("userName", uri = Some(URI.create("urn:ietf:params:scim:schemas:core:2.0:User"))),
+          AttributePath("userName", schema = Some(Schema("urn:ietf:params:scim:schemas:core:2.0:User"))),
           "J"))
       }
       it("should parse simple pr filter") {
@@ -184,6 +182,233 @@ class FilterSpec extends AnyFunSpec with Checkers with Matchers {
                 Comparison.Contains(AttributePath("value"), "@foo.com"),
               )),
           ))
+      }
+    }
+
+    describe("evaluate") {
+      it("should evaluate simple equal (positive)") {
+        val filter = parseSuccessful("userName eq \"bjensen@example.com\"")
+        filter.evaluate(Jsons.userMinimal) should be(true)
+      }
+      it("should evaluate simple equal (negative)") {
+        val filter = parseSuccessful("userName eq \"mario@example.com\"")
+        filter.evaluate(Jsons.userMinimal) should be(false)
+      }
+
+      it("should evaluate negated expression") {
+        val filter = parseSuccessful("not (userName eq \"mario@example.com\")")
+        filter.evaluate(Jsons.userMinimal) should be(true)
+      }
+
+      it("should evaluate subpath contains (positive)") {
+        parseSuccessful("name.familyName co \"Jen\"")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("name.familyName co \"Jensen\"")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("name.familyName co \"en\"")
+          .evaluate(Jsons.userFull) should be(true)
+      }
+      it("should evaluate subpath contains (negative)") {
+        parseSuccessful("name.familyName co \"X\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName co \"bla\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName co \"jen\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName co 1")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName co false")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName co null")
+          .evaluate(Jsons.userFull) should be(false)
+      }
+
+      it("should evaluate subpath startsWith (positive)") {
+        parseSuccessful("name.familyName sw \"Jen\"")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("name.familyName sw \"Jensen\"")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("name.familyName sw \"J\"")
+          .evaluate(Jsons.userFull) should be(true)
+      }
+      it("should evaluate subpath startsWith (negative)") {
+        parseSuccessful("name.familyName sw \"X\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName sw \"jen\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName sw \"ens\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName sw 1")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName sw false")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName sw null")
+          .evaluate(Jsons.userFull) should be(false)
+      }
+      it("should evaluate subpath endsWith (positive)") {
+        parseSuccessful("name.familyName ew \"en\"")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("name.familyName ew \"Jensen\"")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("name.familyName ew \"n\"")
+          .evaluate(Jsons.userFull) should be(true)
+      }
+      it("should evaluate subpath endsWith (negative)") {
+        parseSuccessful("name.familyName ew \"X\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName ew \"eN\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName ew \"N\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName ew 1")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName ew false")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName ew null")
+          .evaluate(Jsons.userFull) should be(false)
+      }
+
+      it("should evaluate presence (positive)") {
+        parseSuccessful("name pr")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("userName pr")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("title pr")
+          .evaluate(Jsons.userFull) should be(true)
+      }
+      it("should evaluate presence (negative)") {
+        parseSuccessful("bla pr")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("urn:a:b:userName pr")
+          .evaluate(Jsons.userFull) should be(false)
+      }
+
+      it("should evaluate greaterThan (positive)") {
+        parseSuccessful("meta.lastModified gt \"2011-05-13T04:42:33Z\"")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("meta.lastModified gt \"2010-05-13T04:42:34Z\"")
+          .evaluate(Jsons.userFull) should be(true)
+      }
+      it("should evaluate greaterThan (negative)") {
+        parseSuccessful("meta.lastModified gt \"2013-05-13T04:42:34Z\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("meta.lastModified gt \"2011-05-13T04:42:34Z\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName gt false")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName gt null")
+          .evaluate(Jsons.userFull) should be(false)
+      }
+      it("should evaluate greaterThanOrEqual (positive)") {
+        parseSuccessful("meta.lastModified ge \"2011-05-13T04:42:34Z\"")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("meta.lastModified ge \"2011-05-13T04:42:33Z\"")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("meta.lastModified ge \"2010-05-13T04:42:34Z\"")
+          .evaluate(Jsons.userFull) should be(true)
+      }
+      it("should evaluate greaterThanOrEqual (negative)") {
+        parseSuccessful("meta.lastModified ge \"2013-05-13T04:42:34Z\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName ge false")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName ge null")
+          .evaluate(Jsons.userFull) should be(false)
+      }
+
+      it("should evaluate lessThan (positive)") {
+        parseSuccessful("meta.lastModified lt \"2011-05-13T04:42:35\"")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("meta.lastModified lt \"2013-05-13T04:42:34Z\"")
+          .evaluate(Jsons.userFull) should be(true)
+      }
+      it("should evaluate lessThan (negative)") {
+        parseSuccessful("meta.lastModified lt \"2010-05-13T04:42:34Z\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("meta.lastModified lt \"2011-05-13T04:42:34Z\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName lt false")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName lt null")
+          .evaluate(Jsons.userFull) should be(false)
+      }
+      it("should evaluate lessThanOrEqual (positive)") {
+        parseSuccessful("meta.lastModified le \"2011-05-13T04:42:34Z\"")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("meta.lastModified le \"2011-05-13T04:42:35Z\"")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("meta.lastModified le \"2013-05-13T04:42:34Z\"")
+          .evaluate(Jsons.userFull) should be(true)
+      }
+      it("should evaluate lessThanOrEqual (negative)") {
+        parseSuccessful("meta.lastModified le \"2010-05-13T04:42:34Z\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName lt false")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("name.familyName lt null")
+          .evaluate(Jsons.userFull) should be(false)
+      }
+
+      it("should evaluate equal with namespace (positive)") {
+        val filter = parseSuccessful("urn:ietf:params:scim:schemas:core:2.0:User:userName eq \"bjensen@example.com\"")
+        filter.evaluate(Jsons.userMinimal) should be(true)
+      }
+      it("should evaluate equal with namespace (negative)") {
+        parseSuccessful("urn:ietf:params:scim:schemas:core:2.0:User:userName eq \"mario@example.com\"")
+          .evaluate(Jsons.userMinimal) should be(false)
+        parseSuccessful("urn:ietf:params:scim:schemas:core:2.0:Group:userName eq \"bjensen@example.com\"")
+          .evaluate(Jsons.userMinimal) should be(false)
+      }
+
+      it("should evaluate 'and' combination (positive)") {
+        val filter = parseSuccessful("title pr and userType eq \"Employee\"")
+        filter.evaluate(Jsons.userFull) should be(true)
+      }
+      it("should evaluate 'and' combination (negative)") {
+        parseSuccessful("not (title pr) and userType eq \"Employee\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("title pr and userType ne \"Employee\"")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("title pr and userType eq \"Homer\"")
+          .evaluate(Jsons.userFull) should be(false)
+      }
+
+      it("should evaluate 'or' combination (positive)") {
+        parseSuccessful("title pr or userType eq \"Employee\"")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("bla pr or userType eq \"Employee\"")
+          .evaluate(Jsons.userFull) should be(true)
+        parseSuccessful("title pr or userType eq \"Manager\"")
+          .evaluate(Jsons.userFull) should be(true)
+      }
+      it("should evaluate 'or' combination (negative)") {
+        parseSuccessful("not (title pr) or not (userType eq \"Employee\")")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("bla pr and userType ne \"Employee\"")
+          .evaluate(Jsons.userFull) should be(false)
+      }
+      it("should evaluate an and/or combination with parens (positive)") {
+        parseSuccessful("userType eq \"Employee\" and (emails co \"example.com\" or emails.value co \"example.org\")")
+          .evaluate(Jsons.userFull) should be(true)
+      }
+      it("should evaluate an and/or combination with parens (negative)") {
+        parseSuccessful("userType eq \"Manager\" and (emails co \"example.com\" or emails.value co \"example.org\")")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("userType eq \"Employee\" and (emails co \"acme.com\" or emails.value co \"acme.org\")")
+          .evaluate(Jsons.userFull) should be(false)
+        parseSuccessful("userType eq \"Employee\" and (emails co \"acme.com\" or emails.value co \"example.org\")")
+          .evaluate(Jsons.userFull) should be(false)
+      }
+
+      it("should evaluate eq on single element array (positive)") {
+        val filter = parseSuccessful("schemas eq \"urn:ietf:params:scim:schemas:core:2.0:User\"")
+        filter.evaluate(Jsons.userMinimal) should be(true)
+      }
+      it("should evaluate eq on single element array (negative)") {
+        parseSuccessful("schemas eq \"urn:ietf:params:scim:schemas:core:2.0:Group\"")
+          .evaluate(Jsons.userMinimal) should be(false)
+        parseSuccessful("schemas eq \"urn:ietf:params:scim:schemas:core:2.0:User\"")
+          .evaluate(Jsons.userFull) should be(false)
       }
     }
   }

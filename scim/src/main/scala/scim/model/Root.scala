@@ -1,5 +1,5 @@
 package scim.model
 
 trait Root {
-  def schemas: Seq[String]
+  def schemas: Seq[Schema]
 }

@@ -10,4 +10,4 @@ case class SearchRequest(
   startIndex: Option[Int],
   count: Option[Int],
 
-  schemas: Seq[String] = Seq("urn:ietf:params:scim:api:messages:2.0:SearchRequest")) extends Root
+  schemas: Seq[Schema] = Seq(Schema.SearchRequest)) extends Root

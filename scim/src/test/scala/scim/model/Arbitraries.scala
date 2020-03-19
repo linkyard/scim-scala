@@ -1,11 +1,8 @@
 package scim.model
 
-import java.net.URI
-import io.circe.Json
 import org.scalacheck.{Arbitrary, Gen}
-import scim.model.Filter.Comparison.{Contains, EndsWith, Equal, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual, NotEqual, Present, StartsWith}
-import scim.model.Filter.{AFilter, And, AttributePath, BooleanValue, Comparison, ComplexAttributeFilter, LogicalOperation, NoFilter, NullValue, NumberValue,
-  Or, StringValue, Value}
+import scim.model.Filter.Comparison._
+import scim.model.Filter._
 
 object Arbitraries {
   implicit def value: Arbitrary[Value] = Arbitrary(Gen.frequency(
@@ -15,11 +12,11 @@ object Arbitraries {
     (10, Gen.alphaNumStr.map(StringValue)),
   ))
 
-  def schemaUri: Arbitrary[URI] = Arbitrary(Gen.frequency(
-    10 -> Gen.const(URI.create("urn:ietf:params:scim:schemas:core:2.0:User")),
-    5 -> Gen.const(URI.create("urn:ietf:params:scim:schemas:core:2.0:Group")),
-    1 -> Gen.const(URI.create("urn:custom:bla")),
-  ))
+  def schema: Arbitrary[Schema] = Arbitrary(Gen.frequency(
+    10 -> Gen.const("urn:ietf:params:scim:schemas:core:2.0:User"),
+    5 -> Gen.const("urn:ietf:params:scim:schemas:core:2.0:Group"),
+    1 -> Gen.const("urn:custom:bla"),
+  ).map(Schema.apply))
   def alpha: Gen[Char] = Gen.oneOf(('A' to 'Z') ++ ('a' to 'z'))
   def alphaNum: Gen[Char] = Gen.oneOf(('A' to 'Z') ++ ('a' to 'z') ++ ('0' to '9'))
   def attributeName: Arbitrary[String] = Arbitrary(for {
@@ -28,7 +25,7 @@ object Arbitraries {
   } yield first.toString + more)
   implicit def attributePath: Arbitrary[AttributePath] = Arbitrary(for {
     name <- attributeName.arbitrary
-    uri <- Gen.oneOf(Gen.const(None), schemaUri.arbitrary.map(Some.apply))
+    uri <- Gen.oneOf(Gen.const(None), schema.arbitrary.map(Some.apply))
     subPath <- Gen.oneOf(Gen.const(None), attributeName.arbitrary.map(Some.apply))
   } yield AttributePath(name, uri, subPath))
 
