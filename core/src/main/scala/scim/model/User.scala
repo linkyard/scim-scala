@@ -19,8 +19,8 @@ object User {
   def apply(root: Root): User = User(root.asJson)
 
   case class Root(
-    id: String,
     userName: String,
+    id: Option[String],
     name: Option[Name] = None,
     displayName: Option[String] = None,
     nickName: Option[String] = None,
@@ -45,7 +45,7 @@ object User {
     def enterprise: Option[EnterpriseUser] = `urn:ietf:params:scim:schemas:extension:enterprise:2.0:User`
   }
   object Root {
-    private[User] val fallback = Root(id = "", userName = "")
+    private[User] val fallback = Root(id = None, userName = "")
   }
 
   case class Name(

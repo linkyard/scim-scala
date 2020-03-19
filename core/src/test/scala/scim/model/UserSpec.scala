@@ -11,7 +11,7 @@ class UserSpec extends AnyFunSpec with Matchers with OptionValues {
 
   describe("User") {
     it("should contain id") {
-      User(Jsons.userMinimal).id should be("2819c223-7f76-453a-919d-413861904646")
+      User(Jsons.userMinimal).id.value should be("2819c223-7f76-453a-919d-413861904646")
     }
     it("should contain schema") {
       User(Jsons.userMinimal).schema should be(Schema("urn:ietf:params:scim:schemas:core:2.0:User"))
@@ -19,14 +19,20 @@ class UserSpec extends AnyFunSpec with Matchers with OptionValues {
 
     it("should parse 'userMinimal'") {
       val root = User(Jsons.userMinimal).root
-      root.id should be("2819c223-7f76-453a-919d-413861904646")
       root.userName should be("bjensen@example.com")
+      root.id.value should be("2819c223-7f76-453a-919d-413861904646")
+      root.name should be(None)
+    }
+    it("should parse 'userMinimalExternal'") {
+      val root = User(Jsons.userMinimalExternal).root
+      root.userName should be("bjensen@example.com")
+      root.id should be(None)
       root.name should be(None)
     }
 
     it("should parse 'userFull'") {
       val root = User(Jsons.userFull).root
-      root.id should be("2819c223-7f76-453a-919d-413861904646")
+      root.id.value should be("2819c223-7f76-453a-919d-413861904646")
       root.userName should be("bjensen@example.com")
       root.name.get.formatted.value should be("Ms. Barbara J Jensen, III")
       root.name.get.familyName.value should be("Jensen")

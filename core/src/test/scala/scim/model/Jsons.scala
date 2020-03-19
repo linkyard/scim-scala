@@ -19,6 +19,14 @@ object Jsons {
       |  }
       |}
       |""".stripMargin).getOrElse(throw new AssertionError(("parsing failed")))
+  val userMinimalExternal = parser.parse(
+    """
+      |{
+      |  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+      |  "externalId": "2819c223-7f76-453a-919d-413861904646",
+      |  "userName": "bjensen@example.com"
+      |}
+      |""".stripMargin).getOrElse(throw new AssertionError(("parsing failed")))
 
   val userFull = parser.parse(
     """
