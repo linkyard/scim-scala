@@ -33,10 +33,10 @@ lazy val root = (project in file("."))
       libraryDependencies ++= Dependencies.logBinding.map(_ % Test),
     )))
   .aggregate(
-    scim
+    core
   )
 
-lazy val scim = (project in file("scim"))
+lazy val core = (project in file("core"))
   .settings(
     name := "scim",
     libraryDependencies ++= Seq(
