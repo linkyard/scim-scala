@@ -17,9 +17,12 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
 
   override def get(subPath: Path, queryParams: QueryParams): F[Response] = subpathToId(subPath) match {
     case Some(id) =>
-      // get a specific user
-      // TODO
-      Applicative[F].pure(Response.notImplemented)
+      store.get(id).map {
+        case Right(user) =>
+          Response.ok(user.asJson, locationHeader = Some(urlConfig.user(Some(id))))
+        case Left(DoesNotExist(id)) =>
+          Response.notFound(id)
+      }
 
     case None =>
       (for {
@@ -71,8 +74,8 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
       pure(Response.notImplemented)
   }
 
+  // TODO
   override def patch(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = Applicative[F].pure(Response.notImplemented)
-
 
   private def subpathToId(subPath: Path): Option[String] =
     Some(subPath.mkString("/")).filter(_.nonEmpty)
