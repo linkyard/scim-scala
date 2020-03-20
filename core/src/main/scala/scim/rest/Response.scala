@@ -35,6 +35,7 @@ object Response {
   def notFound(id: String): Response =
     error(Error(404, detail = Some(s"Resource with id $id not found")))
   def alreadyExists: Response = error(Error(409, detail = Some("Already exists"), scimType = Some("uniqueness")))
+  def conflict(details: String): Response = error(Error(409, detail = Some(details), scimType = Some("mutability")))
 
   def notImplemented: Response = error(Error(501, detail = Some("Not implemented")))
 }

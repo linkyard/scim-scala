@@ -9,7 +9,7 @@ import io.circe.generic.auto._
 import scim.model.Codecs._
 import scim.model.Filter.NoFilter
 import scim.model.{Error, Filter, ListResponse, SearchRequest, SortOrder, User}
-import scim.spi.SpiError.{AlreadyExists, DoesNotExist, MalformedData, MissingData}
+import scim.spi.SpiError.{AlreadyExists, Conflict, DoesNotExist, MalformedData, MissingData}
 import scim.spi.{Sorting, UserStore}
 
 private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore[F], applicative: Applicative[F], sync: Sync[F]) extends Resource[F] {
@@ -61,8 +61,15 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
     }
   }
 
-  // TODO
-  override def put(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = Applicative[F].pure(Response.notImplemented)
+  override def put(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = subpathToId(subPath) match {
+    case Some(id) =>
+      body.as[User]
+        .left.map(Response.decodingFailed)
+        .flatMap(user => if (user.id.contains(id)) Right(user) else Left(Response.conflict("id mismatch between body and url")))
+        .map(update)
+        .fold(pure, identity)
+    case None => pure(Response.notImplemented)
+  }
 
   override def delete(subPath: Path, queryParams: QueryParams): F[Response] = subpathToId(subPath) match {
     case Some(id) =>
@@ -70,8 +77,7 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
         case Right(()) => Response.noContent
         case Left(DoesNotExist(id)) => Response.notFound(id)
       }
-    case None =>
-      pure(Response.notImplemented)
+    case None => pure(Response.notImplemented)
   }
 
   // TODO
@@ -106,6 +112,17 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
         Response.decodingFailed(details)
       case Left(MissingData(details)) =>
         Response.missingValue(details)
+    }
+  }
+
+  private def update(user: User): F[Response] = {
+    store.update(user).map {
+      case Right(updated) =>
+        Response.ok(updated.asJson, locationHeader = Some(urlConfig.user(user.id)))
+      case Left(DoesNotExist(id)) =>
+        Response.notFound(id)
+      case Left(Conflict(details)) =>
+        Response.conflict(details)
     }
   }
 }
