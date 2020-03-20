@@ -3,7 +3,7 @@ package scim.model
 import java.net.URI
 import scala.util.Try
 import cats.kernel.Monoid
-import io.circe.optics.{JsonPath, JsonTraversalPath}
+import io.circe.optics.{JsonFoldPath, JsonPath, JsonTraversalPath}
 import io.circe.{ACursor, Decoder, HCursor, Json, JsonNumber}
 import io.circe.optics.JsonPath._
 
@@ -117,11 +117,8 @@ object Filter {
   sealed trait AttributeSelector {
     def render: String
 
-    def jsonPath(defaultSchema: Schema) =
-      jsonPathSingle(defaultSchema).json.asTraversal.choice(jsonPathMulti(defaultSchema).json)
-
     def jsonPathSingle(defaultSchema: Schema): JsonPath
-    def jsonPathMulti(defaultSchema: Schema): JsonTraversalPath
+    def jsonPathMulti(defaultSchema: Schema): JsonFoldPath
   }
 
   case class AttributePath(name: String, schema: Option[Schema] = None, subAttribute: Option[String] = None) extends AttributeSelector {
@@ -130,14 +127,15 @@ object Filter {
 
     def jsonPathSingle(defaultSchema: Schema): JsonPath =
       subAttribute.map(attrBase(defaultSchema).selectDynamic).getOrElse(attrBase(defaultSchema))
-    def jsonPathMulti(defaultSchema: Schema): JsonTraversalPath =
-      subAttribute.map(attrBase(defaultSchema).each.selectDynamic).getOrElse(attrBase(defaultSchema).each)
+    def jsonPathMulti(defaultSchema: Schema): JsonFoldPath = {
+      val a = attrBase(defaultSchema).each.filter(_ => true)
+      subAttribute.map(a.selectDynamic).getOrElse(a)
+    }
 
     def extract(from: Json, defaultSchema: Schema): Json = {
       val values = jsonPathSingle(defaultSchema).json.getOption(from)
         .orElse(Some(jsonPathMulti(defaultSchema).json.getAll(from)).filter(_.nonEmpty).map(l => Json.arr(l: _*)))
         .getOrElse(Json.Null)
-      println(values)
       values
     }
     def render: String = schema.map(_.asString + ":").getOrElse("") + name + subAttribute.map("." + _).getOrElse("")
@@ -150,8 +148,10 @@ object Filter {
     def jsonPathSingle(defaultSchema: Schema): JsonPath =
       subAttribute.map(attrBase(defaultSchema).selectDynamic).getOrElse(attrBase(defaultSchema))
 
-    def jsonPathMulti(defaultSchema: Schema): JsonTraversalPath =
-      subAttribute.map(attrBase(defaultSchema).each.selectDynamic).getOrElse(attrBase(defaultSchema).each)
+    def jsonPathMulti(defaultSchema: Schema): JsonFoldPath = {
+      val a = attrBase(defaultSchema).each.filter(filter.evaluate)
+      subAttribute.map(a.selectDynamic).getOrElse(a)
+    }
 
     def render: String = schema.map(_.asString + ":").getOrElse("") + name + s"[${filter.render}]" + subAttribute.map("." + _).getOrElse("")
   }
