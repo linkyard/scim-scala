@@ -8,10 +8,11 @@ import io.circe.syntax._
 import io.circe.generic.auto._
 import scim.model.Codecs._
 import scim.model.Filter.NoFilter
-import scim.model.{Filter, ListResponse, SearchRequest, SortOrder}
+import scim.model.{Error, Filter, ListResponse, SearchRequest, SortOrder, User}
+import scim.spi.SpiError.{AlreadyExists, MalformedData, MissingData}
 import scim.spi.{Sorting, UserStore}
 
-private class UserResource[F[_]](implicit store: UserStore[F], applicative: Applicative[F], sync: Sync[F]) extends Resource[F] {
+private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore[F], applicative: Applicative[F], sync: Sync[F]) extends Resource[F] {
   private def pure[A]: A => F[A] = Applicative[F].pure
 
   override def get(subPath: Path, queryParams: QueryParams): F[Response] = {
@@ -42,9 +43,10 @@ private class UserResource[F[_]](implicit store: UserStore[F], applicative: Appl
 
   override def post(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
     if (subPath.isEmpty) {
-      // handle creation
-      // TODO
-      Applicative[F].pure(Response.notImplemented)
+      body.as[User]
+        .left.map(Response.decodingFailed)
+        .map(create)
+        .fold(pure, identity)
     } else if (subPath.headOption.contains(".search")) {
       if (subPath.size > 1) Applicative[F].pure(Response.notFound)
       body.as[SearchRequest]
@@ -55,6 +57,15 @@ private class UserResource[F[_]](implicit store: UserStore[F], applicative: Appl
       pure(Response.notFound)
     }
   }
+
+  // TODO
+  override def put(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = Applicative[F].pure(Response.notImplemented)
+
+  // TODO
+  override def delete(subPath: Path, queryParams: QueryParams): F[Response] = Applicative[F].pure(Response.notImplemented)
+
+  override def patch(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = Applicative[F].pure(Response.notImplemented)
+
 
   private def query(request: SearchRequest): F[Response] = {
     val sorting = request.sortBy.map(by => Sorting(by, request.sortOrder.getOrElse(SortOrder.default)))
@@ -69,15 +80,19 @@ private class UserResource[F[_]](implicit store: UserStore[F], applicative: Appl
         itemsPerPage = request.count,
         Resources = Some(result).filter(_.nonEmpty)
       )
-    }.map(_.asJson)
-      .map(body => Response(200, Some(body)))
+    }.map(body => Response.ok(body.asJson))
   }
 
-  // TODO
-  override def put(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = Applicative[F].pure(Response.notImplemented)
-
-  // TODO
-  override def delete(subPath: Path, queryParams: QueryParams): F[Response] = Applicative[F].pure(Response.notImplemented)
-
-  override def patch(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = Applicative[F].pure(Response.notImplemented)
+  private def create(user: User): F[Response] = {
+    store.create(user).map {
+      case Right(created) =>
+        Response.ok(created.asJson, locationHeader = Some(urlConfig.user(created.id)))
+      case Left(AlreadyExists) =>
+        Response.alreadyExists
+      case Left(MalformedData(details)) =>
+        Response.decodingFailed(details)
+      case Left(MissingData(details)) =>
+        Response.missingValue(details)
+    }
+  }
 }
