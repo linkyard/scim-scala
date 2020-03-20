@@ -30,7 +30,10 @@ object Response {
     detail = Some(s"Parsing failed: $message"), scimType = Some("invalidValue")))
   def missingValue(detail: String): Response = error(Error(400,
     detail = Some(s"Missing value: $detail"), scimType = Some("invalidValue")))
-  def notFound: Response = error(Error(404, detail = Some("Resource not found")))
+  def notFound: Response =
+    error(Error(404, detail = Some("Resource not found")))
+  def notFound(id: String): Response =
+    error(Error(404, detail = Some(s"Resource with id $id not found")))
   def alreadyExists: Response = error(Error(409, detail = Some("Already exists"), scimType = Some("uniqueness")))
 
   def notImplemented: Response = error(Error(501, detail = Some("Not implemented")))

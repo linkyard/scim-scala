@@ -9,4 +9,6 @@ object SpiError {
   type AlreadyExists = AlreadyExists.type
   case class MalformedData(details: String) extends SpiError with CreationError
   case class MissingData(details: String) extends SpiError with CreationError
+
+  case class DoesNotExist(id: String) extends SpiError
 }

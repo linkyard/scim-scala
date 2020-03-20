@@ -9,14 +9,19 @@ import io.circe.generic.auto._
 import scim.model.Codecs._
 import scim.model.Filter.NoFilter
 import scim.model.{Error, Filter, ListResponse, SearchRequest, SortOrder, User}
-import scim.spi.SpiError.{AlreadyExists, MalformedData, MissingData}
+import scim.spi.SpiError.{AlreadyExists, DoesNotExist, MalformedData, MissingData}
 import scim.spi.{Sorting, UserStore}
 
 private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore[F], applicative: Applicative[F], sync: Sync[F]) extends Resource[F] {
   private def pure[A]: A => F[A] = Applicative[F].pure
 
-  override def get(subPath: Path, queryParams: QueryParams): F[Response] = {
-    if (subPath.isEmpty) {
+  override def get(subPath: Path, queryParams: QueryParams): F[Response] = subpathToId(subPath) match {
+    case Some(id) =>
+      // get a specific user
+      // TODO
+      Applicative[F].pure(Response.notImplemented)
+
+    case None =>
       (for {
         filter <- queryParams.get("filter").traverse(Filter.parse)
         sortBy = queryParams.get("sortBy").filter(_.nonEmpty)
@@ -34,11 +39,6 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
       )).left.map(Response.decodingFailed)
         .map(query)
         .fold(pure, identity)
-    } else {
-      // get a specific user
-      // TODO
-      Applicative[F].pure(Response.notImplemented)
-    }
   }
 
   override def post(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
@@ -61,11 +61,21 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
   // TODO
   override def put(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = Applicative[F].pure(Response.notImplemented)
 
-  // TODO
-  override def delete(subPath: Path, queryParams: QueryParams): F[Response] = Applicative[F].pure(Response.notImplemented)
+  override def delete(subPath: Path, queryParams: QueryParams): F[Response] = subpathToId(subPath) match {
+    case Some(id) =>
+      store.delete(id).map {
+        case Right(()) => Response.noContent
+        case Left(DoesNotExist(id)) => Response.notFound(id)
+      }
+    case None =>
+      pure(Response.notImplemented)
+  }
 
   override def patch(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = Applicative[F].pure(Response.notImplemented)
 
+
+  private def subpathToId(subPath: Path): Option[String] =
+    Some(subPath.mkString("/")).filter(_.nonEmpty)
 
   private def query(request: SearchRequest): F[Response] = {
     val sorting = request.sortBy.map(by => Sorting(by, request.sortOrder.getOrElse(SortOrder.default)))
