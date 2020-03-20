@@ -44,8 +44,10 @@ lazy val core = (project in file("core"))
       "org.typelevel" %% "cats-effect" % Dependencies.catsEffect,
       "co.fs2" %% "fs2-core" % Dependencies.fs2,
       "io.circe" %% "circe-generic" % Dependencies.circe,
+      "io.circe" %% "circe-optics" % Dependencies.circe,
       "com.lihaoyi" %% "fastparse" % Dependencies.fastParse,
       "io.circe" %% "circe-parser" % Dependencies.circe % Test,
+      "io.circe" %% "circe-testing" % Dependencies.circe % Test,
     ),
     libraryDependencies ++= Dependencies.logBinding,
   )

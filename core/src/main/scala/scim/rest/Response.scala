@@ -30,6 +30,9 @@ object Response {
     detail = Some(s"Parsing failed: $message"), scimType = Some("invalidValue")))
   def missingValue(detail: String): Response = error(Error(400,
     detail = Some(s"Missing value: $detail"), scimType = Some("invalidValue")))
+  def forbidden: Response = forbidden("not allowed")
+  def forbidden(detail: String): Response =
+    error(Error(403, detail = Some(detail)))
   def notFound: Response =
     error(Error(404, detail = Some("Resource not found")))
   def notFound(id: String): Response =

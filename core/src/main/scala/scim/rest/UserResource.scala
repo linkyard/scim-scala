@@ -1,15 +1,15 @@
 package scim.rest
 
+import cats.Applicative
 import cats.effect.Sync
 import cats.implicits._
-import cats.{Applicative, Monad, MonadError}
-import io.circe.Json
-import io.circe.syntax._
 import io.circe.generic.auto._
+import io.circe.syntax._
+import io.circe.{Decoder, Json}
 import scim.model.Codecs._
 import scim.model.Filter.NoFilter
-import scim.model.{Error, Filter, ListResponse, SearchRequest, SortOrder, User}
-import scim.spi.SpiError.{AlreadyExists, Conflict, DoesNotExist, MalformedData, MissingData}
+import scim.model._
+import scim.spi.SpiError._
 import scim.spi.{Sorting, UserStore}
 
 private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore[F], applicative: Applicative[F], sync: Sync[F]) extends Resource[F] {
@@ -46,14 +46,12 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
 
   override def post(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
     if (subPath.isEmpty) {
-      body.as[User]
-        .left.map(Response.decodingFailed)
+      decodeBody[User](body)
         .map(create)
         .fold(pure, identity)
     } else if (subPath.headOption.contains(".search")) {
       if (subPath.size > 1) Applicative[F].pure(Response.notFound)
-      body.as[SearchRequest]
-        .left.map(Response.decodingFailed)
+      decodeBody[SearchRequest](body)
         .map(query)
         .fold(pure, identity)
     } else {
@@ -63,8 +61,7 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
 
   override def put(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = subpathToId(subPath) match {
     case Some(id) =>
-      body.as[User]
-        .left.map(Response.decodingFailed)
+      decodeBody[User](body)
         .flatMap(user => if (user.id.contains(id)) Right(user) else Left(Response.conflict("id mismatch between body and url")))
         .map(update)
         .fold(pure, identity)
@@ -80,11 +77,19 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
     case None => pure(Response.notImplemented)
   }
 
-  // TODO
-  override def patch(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = Applicative[F].pure(Response.notImplemented)
+  override def patch(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = subpathToId(subPath) match {
+    case Some(id) =>
+      decodeBody[PatchOp](body)
+        .map(applyPatch(id))
+        .fold(pure, identity)
+    case None => pure(Response.notImplemented)
+  }
 
   private def subpathToId(subPath: Path): Option[String] =
     Some(subPath.mkString("/")).filter(_.nonEmpty)
+
+  private def decodeBody[A: Decoder](body: Json): Either[Response, A] =
+    body.as[A].left.map(Response.decodingFailed)
 
   private def query(request: SearchRequest): F[Response] = {
     val sorting = request.sortBy.map(by => Sorting(by, request.sortOrder.getOrElse(SortOrder.default)))
@@ -123,6 +128,18 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
         Response.notFound(id)
       case Left(Conflict(details)) =>
         Response.conflict(details)
+    }
+  }
+
+  private def applyPatch(id: String)(op: PatchOp): F[Response] = {
+    store.get(id).flatMap {
+      case Right(current) =>
+        op.applyTo(Schema.User)(current.json)
+          .left.map(Response.decodingFailed)
+          .map(User.apply)
+          .map(update)
+          .fold(pure, identity)
+      case Left(DoesNotExist(id)) => pure(Response.notFound(id))
     }
   }
 }

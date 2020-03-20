@@ -2,7 +2,10 @@ package scim.model
 
 import java.net.URI
 import scala.util.Try
-import io.circe.{Decoder, Json, JsonNumber}
+import cats.kernel.Monoid
+import io.circe.optics.{JsonPath, JsonTraversalPath}
+import io.circe.{ACursor, Decoder, HCursor, Json, JsonNumber}
+import io.circe.optics.JsonPath._
 
 /** RFC 7644 - 3.4.2.2. */
 sealed trait Filter {
@@ -21,7 +24,9 @@ sealed trait Filter {
 }
 
 object Filter {
-  def parse(string: String): Either[String, Filter] = Parser(string)
+  def parse(string: String): Either[String, Filter] = Parser.parseFilter(string)
+
+  def parseAttributeSelector(string: String): Either[String, AttributeSelector] = Parser.parseAttributeSelector(string)
 
   def none: Filter = NoFilter
 
@@ -109,18 +114,46 @@ object Filter {
     def render = s"${attributePath.render}[${filter.render}]"
   }
 
-  case class AttributePath(name: String, schema: Option[Schema] = None, subAttribute: Option[String] = None) {
+  sealed trait AttributeSelector {
+    def render: String
+
+    def jsonPath(defaultSchema: Schema) =
+      jsonPathSingle(defaultSchema).json.asTraversal.choice(jsonPathMulti(defaultSchema).json)
+
+    def jsonPathSingle(defaultSchema: Schema): JsonPath
+    def jsonPathMulti(defaultSchema: Schema): JsonTraversalPath
+  }
+
+  case class AttributePath(name: String, schema: Option[Schema] = None, subAttribute: Option[String] = None) extends AttributeSelector {
+    private def attrBase(defaultSchema: Schema): JsonPath =
+      schema.filter(_ != defaultSchema).map(_.asString).map(root.selectDynamic).getOrElse(root).selectDynamic(name)
+
+    def jsonPathSingle(defaultSchema: Schema): JsonPath =
+      subAttribute.map(attrBase(defaultSchema).selectDynamic).getOrElse(attrBase(defaultSchema))
+    def jsonPathMulti(defaultSchema: Schema): JsonTraversalPath =
+      subAttribute.map(attrBase(defaultSchema).each.selectDynamic).getOrElse(attrBase(defaultSchema).each)
+
     def extract(from: Json, defaultSchema: Schema): Json = {
-      val cursor = from.hcursor
-      val base = schema.filter(_ != defaultSchema).map(_.asString)
-        .map(cursor.downField).getOrElse(cursor)
-      val root = base.downField(name)
-      subAttribute
-        .map(a => root.downField(a).focus.orElse(root.downArray.downField(a).focus))
-        .getOrElse(root.focus)
+      val values = jsonPathSingle(defaultSchema).json.getOption(from)
+        .orElse(Some(jsonPathMulti(defaultSchema).json.getAll(from)).filter(_.nonEmpty).map(l => Json.arr(l: _*)))
         .getOrElse(Json.Null)
+      println(values)
+      values
     }
     def render: String = schema.map(_.asString + ":").getOrElse("") + name + subAttribute.map("." + _).getOrElse("")
+  }
+  case class FilteredAttributePath(name: String, filter: AFilter, schema: Option[Schema] = None, subAttribute: Option[String] = None)
+    extends AttributeSelector {
+    private def attrBase(defaultSchema: Schema): JsonPath =
+      schema.filter(_ != defaultSchema).map(_.asString).map(root.selectDynamic).getOrElse(root).selectDynamic(name)
+
+    def jsonPathSingle(defaultSchema: Schema): JsonPath =
+      subAttribute.map(attrBase(defaultSchema).selectDynamic).getOrElse(attrBase(defaultSchema))
+
+    def jsonPathMulti(defaultSchema: Schema): JsonTraversalPath =
+      subAttribute.map(attrBase(defaultSchema).each.selectDynamic).getOrElse(attrBase(defaultSchema).each)
+
+    def render: String = schema.map(_.asString + ":").getOrElse("") + name + s"[${filter.render}]" + subAttribute.map("." + _).getOrElse("")
   }
 
   sealed trait Value {
@@ -183,13 +216,20 @@ object Filter {
     import fastparse._
     import NoWhitespace._
 
-    def apply(string: String): Either[String, Filter] = {
+    def parseFilter(string: String): Either[String, Filter] = {
       if (string.trim.isEmpty) Right(NoFilter)
       else {
         fastparse.parse(string, completeFilter(_), verboseFailures = true) match {
           case Parsed.Success(value, index) => Right(value)
           case failure: Parsed.Failure => Left(failure.longMsg)
         }
+      }
+    }
+
+    def parseAttributeSelector(string: String): Either[String, AttributeSelector] = {
+      fastparse.parse(string, attributeSelector(_), verboseFailures = true) match {
+        case Parsed.Success(value, index) => Right(value)
+        case failure: Parsed.Failure => Left(failure.longMsg)
       }
     }
 
@@ -256,6 +296,9 @@ object Filter {
     def attrname[_: P] = P((alpha ~ nameChar.rep).!)
     def subattr[_: P] = P("." ~ attrname)
     def attrPath[_: P] = P((uriPrefix ~ ":").? ~ attrname ~ subattr.?).map(v => AttributePath(v._2, v._1.map(Schema.apply), v._3))
+    def filteredAttrPath[_: P]: P[FilteredAttributePath] = P(attrPath ~ "[" ~/ valFilter ~ "]" ~ subattr.?).map {
+      case (path, filter, sub) => FilteredAttributePath(path.name, filter, path.schema, sub)
+    }
     def compareOp[_: P] = P(StringInIgnoreCase("eq", "ne", "co", "sw", "ew", "gt", "lt", "ge", "le")).!
       .map(_.toLowerCase)
       .map[(AttributePath, Value) => Comparison] {
@@ -279,7 +322,7 @@ object Filter {
       case (Some(_), filter) => Not(filter)
       case (None, filter) => filter
     }
-    def valuePath[_: P]: P[ComplexAttributeFilter] = P(attrPath ~ "[" ~ valFilter ~ "]").map { case (path, filter) => ComplexAttributeFilter(path, filter) }
+    def valuePath[_: P]: P[ComplexAttributeFilter] = P(attrPath ~ "[" ~/ valFilter ~ "]").map { case (path, filter) => ComplexAttributeFilter(path, filter) }
     def logicalOperator[_: P]: P[(AFilter, AFilter) => LogicalOperation] = (P(IgnoreCase("and")).map(_ => And) | P(IgnoreCase("or")).map(_ => Or))
 
     def valFilter[_: P]: P[AFilter] = P((parensExp | attrExp) ~ (space ~ logicalOperator ~ space ~ valFilter).?).map {
@@ -292,5 +335,7 @@ object Filter {
     }
 
     def completeFilter[_: P]: P[AFilter] = P(Start ~ filter ~ End)
+
+    def attributeSelector[_: P]: P[AttributeSelector] = P(Start ~ (filteredAttrPath | attrPath) ~ End)
   }
 }

@@ -1,9 +1,11 @@
 package scim.model
 
-import io.circe.parser
+import io.circe.{Json, parser}
 
 object Jsons {
-  val userMinimal = parser.parse(
+  private def parse(string: String): Json = parser.parse(string).getOrElse(throw new AssertionError(("parsing failed")))
+
+  val userMinimal = parse(
     """
       |{
       |  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
@@ -18,17 +20,18 @@ object Jsons {
       |     "https://example.com/v2/Users/2819c223-7f76-453a-919d-413861904646"
       |  }
       |}
-      |""".stripMargin).getOrElse(throw new AssertionError(("parsing failed")))
-  val userMinimalExternal = parser.parse(
+      |""".stripMargin)
+
+  val userMinimalExternal = parse(
     """
       |{
       |  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
       |  "externalId": "2819c223-7f76-453a-919d-413861904646",
       |  "userName": "bjensen@example.com"
       |}
-      |""".stripMargin).getOrElse(throw new AssertionError(("parsing failed")))
+      |""".stripMargin)
 
-  val userFull = parser.parse(
+  val userFull = parse(
     """
       |{
       |  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User", "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User"],
@@ -159,5 +162,29 @@ object Jsons {
       |"https://example.com/v2/Users/2819c223-7f76-453a-919d-413861904646"
       |  }
       |}
-      |""".stripMargin).getOrElse(throw new AssertionError(("parsing failed")))
+      |""".stripMargin)
+
+
+  val group = parse(
+    """
+      |       {
+      |         "id": "6c5bb468-14b2-4183-baf2-06d523e03bd3",
+      |         "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+      |         "displayName": "Group B",
+      |         "meta": {
+      |           "resourceType": "Group",
+      |           "created": "2011-08-01T18:29:50.873Z",
+      |           "lastModified": "2011-08-01T18:29:50.873Z",
+      |           "location": "https://example.com/v2/Groups/6c5bb468-14b2-4183-baf2-06d523e03bd3",
+      |           "version": "W\/\"wGB85s2QJMjiNnuI\""
+      |         },
+      |         "members": [
+      |           {
+      |             "value": "c3a26dd3-27a0-4dec-a2ac-ce211e105f97",
+      |             "$ref":"https://example.com/v2/Groups/c3a26dd3-27a0-4dec-a2ac-ce211e105f97",
+      |             "type": "Group"
+      |           }
+      |         ]
+      |       }
+      |""".stripMargin)
 }
