@@ -3,7 +3,8 @@ package scim.model
 import java.net.URI
 import java.util.Locale
 import scala.util.Try
-import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto._
+import io.circe.{Codec, Decoder, Encoder}
 import scim.model.Filter.AttributeSelector
 import scim.model.PatchOp.OperationType
 
@@ -36,8 +37,15 @@ object Codecs {
     case OperationType.Remove => "remove"
     case OperationType.Replace => "replace"
   }
+  implicit val patchOpOperationCodec: Codec[PatchOp.Operation] = deriveCodec
+  implicit val patchOpCodec: Codec[PatchOp] = deriveCodec
 
-  implicit val extensibleModelEncoder: Encoder[ExtensibleModel[_]] = v => v.asJson
+  implicit val errorCodec: Codec[Error] = deriveCodec
+  implicit val searchRequestCodec: Codec[SearchRequest] = deriveCodec
+  implicit val listResponseCodec: Codec[ListResponse] = deriveCodec
+
   implicit val userDecoder: Decoder[User] = Decoder.decodeJson.map(User.apply)
+  implicit val userEncoder: Encoder[User] = _.asJson
   implicit val groupDecoder: Decoder[Group] = Decoder.decodeJson.map(Group.apply)
+  implicit val groupEncoder: Encoder[Group] = _.asJson
 }

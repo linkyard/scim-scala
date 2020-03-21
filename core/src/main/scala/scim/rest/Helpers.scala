@@ -6,7 +6,6 @@ import scim.model.{ExtensibleModel, Filter, ListResponse, PatchOp, Schema, Searc
 import scim.rest.Resource.{Path, QueryParams}
 import cats.implicits._
 import io.circe.{Decoder, Encoder, Json}
-import io.circe.generic.auto._
 import io.circe.syntax._
 import scim.model.Codecs._
 import scim.model.Filter.NoFilter

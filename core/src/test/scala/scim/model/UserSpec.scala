@@ -62,7 +62,7 @@ class UserSpec extends AnyFunSpec with Matchers with OptionValues {
         val r = Codecs.userDecoder.decodeJson(original)
         r.isRight should be(true)
         val user = r.getOrElse(fail(""))
-        val json = Codecs.extensibleModelEncoder(user)
+        val json = user.asJson
         json should be(original)
       }
 

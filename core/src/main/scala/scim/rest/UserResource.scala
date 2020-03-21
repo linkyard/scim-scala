@@ -2,7 +2,6 @@ package scim.rest
 
 import cats.Monad
 import io.circe.Json
-import io.circe.generic.auto._
 import scim.model.Codecs._
 import scim.model._
 import scim.rest.Resource.{Path, QueryParams}
@@ -16,7 +15,6 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
       .orElse(Helpers.Get.search(subPath, queryParams)(store.search))
       .getOrElse(pure(Response.notImplemented))
   }
-
 
   override def post(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
     Helpers.Post.create(subPath, body, urlConfig.user)(store.create)
@@ -33,7 +31,6 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
     Helpers.Delete.delete(subPath)(store.delete)
       .getOrElse(pure(Response.notImplemented))
   }
-
 
   override def patch(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
     Helpers.Patch.patchViaJson(subPath, body, urlConfig.user)(store.get, store.update, Schema.User)

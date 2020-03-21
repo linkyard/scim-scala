@@ -3,7 +3,6 @@ package scim.rest
 import java.net.URI
 import io.circe.{DecodingFailure, Encoder, Json}
 import io.circe.syntax._
-import io.circe.generic.auto._
 import scim.model.Error
 import scim.model.Codecs._
 

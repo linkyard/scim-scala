@@ -35,8 +35,8 @@ class GroupSpec extends AnyFunSpec with Matchers with OptionValues {
       def roundtrip(original: Json) = {
         val r = Codecs.groupDecoder.decodeJson(original)
         r.isRight should be(true)
-        val user = r.getOrElse(fail(""))
-        val json = Codecs.extensibleModelEncoder(user)
+        val group = r.getOrElse(fail(""))
+        val json = group.asJson
         json should be(original)
       }
 

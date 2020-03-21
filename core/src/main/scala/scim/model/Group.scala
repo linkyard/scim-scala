@@ -1,6 +1,7 @@
 package scim.model
 
 import io.circe.Json
+import io.circe.syntax._
 import io.circe.generic.auto._
 import scim.model.Group.Root
 
@@ -12,6 +13,8 @@ case class Group(json: Json) extends ExtensibleModel[Root] {
 }
 
 object Group {
+  def apply(root: Root): Group = Group(root.asJson)
+
   case class Root(
     id: Option[String],
     displayName: String,

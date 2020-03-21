@@ -2,7 +2,6 @@ package scim.model
 
 import io.circe.syntax._
 import io.circe.{Json, parser}
-import io.circe.generic.auto._
 import Codecs._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
