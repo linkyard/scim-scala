@@ -1,5 +1,6 @@
 package scim.rest
 
+import java.net.URI
 import cats.{Applicative, Monad}
 import scim.model.{ExtensibleModel, Filter, ListResponse, PatchOp, Schema, SearchRequest, SortOrder, User}
 import scim.rest.Resource.{Path, QueryParams}
@@ -18,8 +19,15 @@ private object Helpers {
   type QueryFun[F[_], A] = (Filter, Paging, Option[Sorting]) => F[Seq[A]]
 
   object Get {
-    def retrieve[F[_]](subPath: Path)(get: Id => F[Response]): Option[F[Response]] = {
-      subpathToId(subPath).map(get)
+    def retrieve[F[_]: Applicative, A: Encoder](subPath: Path, url: Option[Id] => URI)(get: Id => F[Either[DoesNotExist, A]]): Option[F[Response]] = {
+      subpathToId(subPath).map { id =>
+        get(id).map {
+          case Right(r) =>
+            Response.ok(r.asJson, locationHeader = Some(url(Some(id))))
+          case Left(DoesNotExist(id)) =>
+            Response.notFound(id)
+        }
+      }
     }
 
     def search[F[_] : Applicative, A: Encoder](subPath: Path, queryParams: QueryParams)(query: QueryFun[F, A]): Option[F[Response]] = {

@@ -16,7 +16,7 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
   private def pure[A]: A => F[A] = monad.pure
 
   override def get(subPath: Path, queryParams: QueryParams): F[Response] = {
-    Helpers.Get.retrieve(subPath)(retrieveFromStore)
+    Helpers.Get.retrieve(subPath, urlConfig.user)(store.get)
       .orElse(Helpers.Get.search(subPath, queryParams)(store.search))
       .getOrElse(pure(Response.notImplemented))
   }
@@ -42,15 +42,6 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
   override def patch(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
     Helpers.Patch.patchViaJson(subPath, body)(store.get, updateInStore, Schema.User)
       .getOrElse(pure(Response.notImplemented))
-  }
-
-  private def retrieveFromStore(id: String): F[Response] = {
-    store.get(id).map {
-      case Right(user) =>
-        Response.ok(user.asJson, locationHeader = Some(urlConfig.user(Some(id))))
-      case Left(DoesNotExist(id)) =>
-        Response.notFound(id)
-    }
   }
 
   private def createInStore(user: User): F[Response] = {
