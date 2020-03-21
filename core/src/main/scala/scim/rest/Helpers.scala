@@ -9,13 +9,13 @@ import io.circe.{Decoder, Encoder, Json}
 import io.circe.syntax._
 import scim.model.Codecs._
 import scim.model.Filter.NoFilter
-import scim.spi.{Paging, Sorting}
+import scim.spi.{Paging, SearchResult, Sorting}
 import scim.spi.SpiError.{AlreadyExists, Conflict, CreationError, DoesNotExist, MalformedData, MissingData, UpdateError}
 
 private object Helpers {
   type Id = String
 
-  type QueryFun[F[_], A] = (Filter, Paging, Option[Sorting]) => F[Seq[A]]
+  type QueryFun[F[_], A] = (Filter, Paging, Option[Sorting]) => F[SearchResult[A]]
 
   object Get {
     def retrieve[F[_] : Applicative, A: Encoder](subPath: Path, url: Option[Id] => URI)(get: Id => F[Either[DoesNotExist, A]]): Option[F[Response]] = {
@@ -151,12 +151,12 @@ private object Helpers {
     val paging = Paging(start = request.startIndex.map(_ - 1).map(_ max 0).getOrElse(0), maxResults = request.count.map(_ max 1))
     val sorting = request.sortBy.map(by => Sorting(by, request.sortOrder.getOrElse(SortOrder.default)))
     query(filter, paging, sorting)
-      .map { results =>
+      .map { result =>
         ListResponse(
-          totalResults = results.size,
+          totalResults = result.totalCount,
           startIndex = Some(paging.start).filterNot(_ == 0).map(_ + 1),
           itemsPerPage = paging.maxResults,
-          Resources = Some(results.map(_.asJson)).filter(_.nonEmpty)
+          Resources = Some(result.results.map(_.asJson)).filter(_.nonEmpty)
         )
       }.map(body => Response.ok(body.asJson))
   }

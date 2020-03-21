@@ -9,4 +9,6 @@ package object spi {
 
   case class Sorting(byField: String, order: SortOrder)
 
+  case class SearchResult[A](results: Seq[A], totalCount: Int)
+
 }
