@@ -17,14 +17,14 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
 
   override def get(subPath: Path, queryParams: QueryParams): F[Response] = {
     Helpers.Get.retrieve(subPath)(retrieveFromStore)
-      .orElse(Helpers.Get.search(subPath, queryParams)(queryStore))
+      .orElse(Helpers.Get.search(subPath, queryParams)(store.search))
       .getOrElse(pure(Response.notImplemented))
   }
 
 
   override def post(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
     Helpers.Post.create(subPath, body)(createInStore)
-      .orElse(Helpers.Post.search(subPath, body)(queryStore))
+      .orElse(Helpers.Post.search(subPath, body)(store.search))
       .getOrElse(pure(Response.notImplemented))
   }
 
@@ -34,7 +34,7 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
   }
 
   override def delete(subPath: Path, queryParams: QueryParams): F[Response] = {
-    Helpers.Delete.delete(subPath)(deleteFromStore)
+    Helpers.Delete.delete(subPath)(store.delete)
       .getOrElse(pure(Response.notImplemented))
   }
 
@@ -51,17 +51,6 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
       case Left(DoesNotExist(id)) =>
         Response.notFound(id)
     }
-  }
-
-  private def queryStore(filter: Filter, paging: Paging, sorting: Option[Sorting]): F[Response] = {
-    store.search(filter, paging, sorting).map { results =>
-      ListResponse(
-        totalResults = results.size,
-        startIndex = Some(paging.start).filterNot(_ == 0).map(_ + 1),
-        itemsPerPage = paging.maxResults,
-        Resources = Some(results.map(_.asJson)).filter(_.nonEmpty)
-      )
-    }.map(body => Response.ok(body.asJson))
   }
 
   private def createInStore(user: User): F[Response] = {
@@ -85,13 +74,6 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
         Response.notFound(id)
       case Left(Conflict(details)) =>
         Response.conflict(details)
-    }
-  }
-
-  private def deleteFromStore(id: String): F[Response] = {
-    store.delete(id).map {
-      case Right(()) => Response.noContent
-      case Left(DoesNotExist(id)) => Response.notFound(id)
     }
   }
 

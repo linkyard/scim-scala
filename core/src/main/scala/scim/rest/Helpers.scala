@@ -1,11 +1,12 @@
 package scim.rest
 
 import cats.{Applicative, Monad}
-import scim.model.{ExtensibleModel, Filter, PatchOp, Schema, SearchRequest, SortOrder, User}
+import scim.model.{ExtensibleModel, Filter, ListResponse, PatchOp, Schema, SearchRequest, SortOrder, User}
 import scim.rest.Resource.{Path, QueryParams}
 import cats.implicits._
-import io.circe.{Decoder, Json}
+import io.circe.{Decoder, Encoder, Json}
 import io.circe.generic.auto._
+import io.circe.syntax._
 import scim.model.Codecs._
 import scim.model.Filter.NoFilter
 import scim.spi.{Paging, Sorting}
@@ -14,14 +15,14 @@ import scim.spi.SpiError.DoesNotExist
 private object Helpers {
   type Id = String
 
-  type QueryFun[F[_]] = (Filter, Paging, Option[Sorting]) => F[Response]
+  type QueryFun[F[_], A] = (Filter, Paging, Option[Sorting]) => F[Seq[A]]
 
   object Get {
     def retrieve[F[_]](subPath: Path)(get: Id => F[Response]): Option[F[Response]] = {
       subpathToId(subPath).map(get)
     }
 
-    def search[F[_] : Applicative](subPath: Path, queryParams: QueryParams)(query: QueryFun[F]): Option[F[Response]] = {
+    def search[F[_] : Applicative, A: Encoder](subPath: Path, queryParams: QueryParams)(query: QueryFun[F, A]): Option[F[Response]] = {
       if (subpathToId(subPath).isEmpty) Some {
         (for {
           filter <- queryParams.get("filter").traverse(Filter.parse)
@@ -53,7 +54,7 @@ private object Helpers {
       } else None
     }
 
-    def search[F[_] : Applicative](subPath: Path, body: Json)(query: QueryFun[F]): Option[F[Response]] = {
+    def search[F[_] : Applicative, A: Encoder](subPath: Path, body: Json)(query: QueryFun[F, A]): Option[F[Response]] = {
       if (subPath.headOption.contains(".search")) Some {
         if (subPath.size > 1) Applicative[F].pure(Response.notFound)
         decodeBody[SearchRequest](body)
@@ -75,8 +76,13 @@ private object Helpers {
   }
 
   object Delete {
-    def delete[F[_] : Applicative](subPath: Path)(delete: Id => F[Response]): Option[F[Response]] = {
-      subpathToId(subPath).map(delete)
+    def delete[F[_] : Applicative](subPath: Path)(delete: Id => F[Either[DoesNotExist, Unit]]): Option[F[Response]] = {
+      subpathToId(subPath).map { id =>
+        delete(id).map {
+          case Right(()) => Response.noContent
+          case Left(DoesNotExist(id)) => Response.notFound(id)
+        }
+      }
     }
   }
 
@@ -108,10 +114,18 @@ private object Helpers {
   private def subpathToId(subPath: Path): Option[Id] =
     Some(subPath.mkString("/")).filter(_.nonEmpty)
 
-  private def executeQueryRequest[F[_] : Applicative](query: QueryFun[F])(request: SearchRequest) = {
+  private def executeQueryRequest[F[_] : Applicative, A: Encoder](query: QueryFun[F, A])(request: SearchRequest) = {
     val filter = request.filter.getOrElse(NoFilter)
     val paging = Paging(start = request.startIndex.map(_ - 1).map(_ max 0).getOrElse(0), maxResults = request.count.map(_ max 1))
     val sorting = request.sortBy.map(by => Sorting(by, request.sortOrder.getOrElse(SortOrder.default)))
     query(filter, paging, sorting)
+      .map { results =>
+        ListResponse(
+          totalResults = results.size,
+          startIndex = Some(paging.start).filterNot(_ == 0).map(_ + 1),
+          itemsPerPage = paging.maxResults,
+          Resources = Some(results.map(_.asJson)).filter(_.nonEmpty)
+        )
+      }.map(body => Response.ok(body.asJson))
   }
 }
