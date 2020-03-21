@@ -1,10 +1,10 @@
 package scim.rest
 
+import cats.Monad
 import cats.implicits._
-import cats.{Applicative, Monad}
+import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.syntax._
-import io.circe.{Decoder, Json}
 import scim.model.Codecs._
 import scim.model.Filter.NoFilter
 import scim.model._
@@ -53,15 +53,13 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
     }
   }
 
-  private def queryStore(request: SearchRequest): F[Response] = {
-    val paging = Paging(start = request.startIndex.map(_ - 1).map(_ max 0).getOrElse(0), maxResults = request.count.map(_ max 1))
-    val sorting = request.sortBy.map(by => Sorting(by, request.sortOrder.getOrElse(SortOrder.default)))
-    store.search(request.filter.getOrElse(NoFilter), paging, sorting).map { users =>
+  private def queryStore(filter: Filter, paging: Paging, sorting: Option[Sorting]): F[Response] = {
+    store.search(filter, paging, sorting).map { results =>
       ListResponse(
-        totalResults = users.size,
-        startIndex = request.startIndex,
-        itemsPerPage = request.count,
-        Resources = Some(users.map(_.asJson)).filter(_.nonEmpty)
+        totalResults = results.size,
+        startIndex = Some(paging.start).filterNot(_ == 0).map(_ + 1),
+        itemsPerPage = paging.maxResults,
+        Resources = Some(results.map(_.asJson)).filter(_.nonEmpty)
       )
     }.map(body => Response.ok(body.asJson))
   }

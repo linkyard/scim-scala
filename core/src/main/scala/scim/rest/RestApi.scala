@@ -1,15 +1,15 @@
 package scim.rest
 
 import cats.Monad
-import scim.spi.UserStore
+import scim.spi.{GroupStore, UserStore}
 
-class RestApi[F[_]] private(urlConfig: UrlConfig)(implicit monad: Monad[F], userStore: UserStore[F]) {
+class RestApi[F[_]] private(urlConfig: UrlConfig)(implicit monad: Monad[F], userStore: UserStore[F], groupStore: GroupStore[F]) {
   def user: Resource[F] = new UserResource[F](urlConfig)
-  def group: Resource[F] = new GroupResource[F]
+  def group: Resource[F] = new GroupResource[F](urlConfig)
   def me: Resource[F] = new NotImplementedResource[F]
   def default: Resource[F] = new NotFoundResource[F]
 }
 
 object RestApi {
-  def apply[F[_] : Monad : UserStore](urlConfig: UrlConfig): RestApi[F] = new RestApi[F](urlConfig)
+  def apply[F[_] : Monad : UserStore: GroupStore](urlConfig: UrlConfig): RestApi[F] = new RestApi[F](urlConfig)
 }
