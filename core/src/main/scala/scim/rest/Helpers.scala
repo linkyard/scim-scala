@@ -11,7 +11,7 @@ import io.circe.syntax._
 import scim.model.Codecs._
 import scim.model.Filter.NoFilter
 import scim.spi.{Paging, Sorting}
-import scim.spi.SpiError.DoesNotExist
+import scim.spi.SpiError.{AlreadyExists, Conflict, CreationError, DoesNotExist, MalformedData, MissingData, UpdateError}
 
 private object Helpers {
   type Id = String
@@ -19,7 +19,7 @@ private object Helpers {
   type QueryFun[F[_], A] = (Filter, Paging, Option[Sorting]) => F[Seq[A]]
 
   object Get {
-    def retrieve[F[_]: Applicative, A: Encoder](subPath: Path, url: Option[Id] => URI)(get: Id => F[Either[DoesNotExist, A]]): Option[F[Response]] = {
+    def retrieve[F[_] : Applicative, A: Encoder](subPath: Path, url: Option[Id] => URI)(get: Id => F[Either[DoesNotExist, A]]): Option[F[Response]] = {
       subpathToId(subPath).map { id =>
         get(id).map {
           case Right(r) =>
@@ -54,10 +54,21 @@ private object Helpers {
   }
 
   object Post {
-    def create[F[_] : Applicative, A: Decoder](subPath: Path, body: Json)(create: A => F[Response]): Option[F[Response]] = {
+    def create[F[_] : Applicative, A <: ExtensibleModel[_] : Decoder : Encoder](subPath: Path, body: Json, url: Option[Id] => URI)(
+      create: A => F[Either[CreationError, A]]): Option[F[Response]] = {
       if (subPath.isEmpty) Some {
         decodeBody[A](body)
           .map(create)
+          .map(_.map {
+            case Right(created) =>
+              Response.ok(created.asJson, locationHeader = Some(url(created.id)))
+            case Left(AlreadyExists) =>
+              Response.alreadyExists
+            case Left(MalformedData(details)) =>
+              Response.decodingFailed(details)
+            case Left(MissingData(details)) =>
+              Response.missingValue(details)
+          })
           .fold(Applicative[F].pure, identity)
       } else None
     }
@@ -73,11 +84,13 @@ private object Helpers {
   }
 
   object Put {
-    def update[F[_] : Applicative, A <: ExtensibleModel[_] : Decoder](subPath: Path, body: Json)(update: A => F[Response]): Option[F[Response]] = {
+    def update[F[_] : Applicative, A <: ExtensibleModel[_] : Decoder](subPath: Path, body: Json, url: Option[Id] => URI)(
+      update: A => F[Either[UpdateError, A]]): Option[F[Response]] = {
       subpathToId(subPath).map { id =>
         decodeBody[A](body)
           .flatMap(entity => if (entity.id.contains(id)) Right(entity) else Left(Response.conflict("id mismatch between body and url")))
           .map(update)
+          .map(_.map(handleUpdateResult(url)))
           .fold(Applicative[F].pure, identity)
       }
     }
@@ -96,8 +109,8 @@ private object Helpers {
 
   object Patch {
     /** gets the current state, patches that and updates all fields */
-    def patchViaJson[F[_] : Monad, E, A <: ExtensibleModel[_] : Decoder](subPath: Path, body: Json)(
-      retrieve: Id => F[Either[DoesNotExist, A]], update: A => F[Response], schema: Schema): Option[F[Response]] = {
+    def patchViaJson[F[_] : Monad, E, A <: ExtensibleModel[_] : Decoder](subPath: Path, body: Json, url: Option[Id] => URI)(
+      retrieve: Id => F[Either[DoesNotExist, A]], update: A => F[Either[UpdateError, A]], schema: Schema): Option[F[Response]] = {
       subpathToId(subPath).map { id =>
         decodeBody[PatchOp](body)
           .map { op =>
@@ -107,12 +120,24 @@ private object Helpers {
                   .left.map(Response.decodingFailed)
                   .flatMap(_.as[A].left.map(Response.decodingFailed))
                   .map(update)
+                  .map(_.map(handleUpdateResult(url)))
                   .fold(Applicative[F].pure, identity)
               case Left(DoesNotExist(id)) =>
                 Applicative[F].pure(Response.notFound(id))
             }
           }.fold(Applicative[F].pure, identity)
       }
+    }
+  }
+
+  private def handleUpdateResult[A <: ExtensibleModel[_]](url: Option[Id] => URI)(updateResult: Either[UpdateError, A]): Response = {
+    updateResult match {
+      case Right(updated) =>
+        Response.ok(updated.asJson, locationHeader = Some(url(updated.id)))
+      case Left(DoesNotExist(id)) =>
+        Response.notFound(id)
+      case Left(Conflict(details)) =>
+        Response.conflict(details)
     }
   }
 

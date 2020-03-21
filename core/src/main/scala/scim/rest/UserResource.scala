@@ -1,16 +1,12 @@
 package scim.rest
 
 import cats.Monad
-import cats.implicits._
 import io.circe.Json
 import io.circe.generic.auto._
-import io.circe.syntax._
 import scim.model.Codecs._
-import scim.model.Filter.NoFilter
 import scim.model._
 import scim.rest.Resource.{Path, QueryParams}
-import scim.spi.SpiError._
-import scim.spi.{Paging, Sorting, UserStore}
+import scim.spi.UserStore
 
 private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore[F], monad: Monad[F]) extends Resource[F] {
   private def pure[A]: A => F[A] = monad.pure
@@ -23,13 +19,13 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
 
 
   override def post(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
-    Helpers.Post.create(subPath, body)(createInStore)
+    Helpers.Post.create(subPath, body, urlConfig.user)(store.create)
       .orElse(Helpers.Post.search(subPath, body)(store.search))
       .getOrElse(pure(Response.notImplemented))
   }
 
   override def put(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
-    Helpers.Put.update(subPath, body)(updateInStore)
+    Helpers.Put.update(subPath, body, urlConfig.user)(store.update)
       .getOrElse(pure(Response.notImplemented))
   }
 
@@ -40,32 +36,7 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
 
 
   override def patch(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
-    Helpers.Patch.patchViaJson(subPath, body)(store.get, updateInStore, Schema.User)
+    Helpers.Patch.patchViaJson(subPath, body, urlConfig.user)(store.get, store.update, Schema.User)
       .getOrElse(pure(Response.notImplemented))
   }
-
-  private def createInStore(user: User): F[Response] = {
-    store.create(user).map {
-      case Right(created) =>
-        Response.ok(created.asJson, locationHeader = Some(urlConfig.user(created.id)))
-      case Left(AlreadyExists) =>
-        Response.alreadyExists
-      case Left(MalformedData(details)) =>
-        Response.decodingFailed(details)
-      case Left(MissingData(details)) =>
-        Response.missingValue(details)
-    }
-  }
-
-  private def updateInStore(user: User): F[Response] = {
-    store.update(user).map {
-      case Right(updated) =>
-        Response.ok(updated.asJson, locationHeader = Some(urlConfig.user(user.id)))
-      case Left(DoesNotExist(id)) =>
-        Response.notFound(id)
-      case Left(Conflict(details)) =>
-        Response.conflict(details)
-    }
-  }
-
 }
