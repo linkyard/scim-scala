@@ -39,4 +39,5 @@ object Codecs {
 
   implicit val extensibleModelEncoder: Encoder[ExtensibleModel[_]] = v => v.asJson
   implicit val userDecoder: Decoder[User] = Decoder.decodeJson.map(User.apply)
+  implicit val groupDecoder: Decoder[Group] = Decoder.decodeJson.map(Group.apply)
 }
