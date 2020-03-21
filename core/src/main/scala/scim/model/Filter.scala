@@ -2,7 +2,6 @@ package scim.model
 
 import java.net.URI
 import scala.util.Try
-import cats.kernel.Monoid
 import io.circe.optics.{JsonFoldPath, JsonPath, JsonTraversalPath}
 import io.circe.{ACursor, Decoder, HCursor, Json, JsonNumber}
 import io.circe.optics.JsonPath._
@@ -115,43 +114,42 @@ object Filter {
   }
 
   sealed trait AttributeSelector {
-    def render: String
+    def name: String
+    def schema: Option[Schema]
+    def subAttribute: Option[String]
 
-    def jsonPathSingle(defaultSchema: Schema): JsonPath
-    def jsonPathMulti(defaultSchema: Schema): JsonFoldPath
+    /** Json path of the attribute (excluding the subAttribute) */
+    def basePath(defaultSchema: Schema): JsonPath =
+      schema.filter(_ != defaultSchema).map(_.asString).map(root.selectDynamic).getOrElse(root).selectDynamic(name)
+
+    protected def valueOrSubAttribute(on: Json): Json = subAttribute match {
+      case Some(sn) =>
+        on.fold[Json](
+          jsonNull = Json.Null,
+          jsonBoolean = _ => Json.Null,
+          jsonNumber = _ => Json.Null,
+          jsonString = _ => Json.Null,
+          jsonObject = _.apply(sn).getOrElse(Json.Null),
+          jsonArray = a => Json.arr(a.map(_.asObject.flatMap(_.apply(sn)).getOrElse(Json.Null)): _*)
+        )
+      case None => on
+    }
+
+    def render: String
   }
 
   case class AttributePath(name: String, schema: Option[Schema] = None, subAttribute: Option[String] = None) extends AttributeSelector {
-    private def attrBase(defaultSchema: Schema): JsonPath =
-      schema.filter(_ != defaultSchema).map(_.asString).map(root.selectDynamic).getOrElse(root).selectDynamic(name)
-
-    def jsonPathSingle(defaultSchema: Schema): JsonPath =
-      subAttribute.map(attrBase(defaultSchema).selectDynamic).getOrElse(attrBase(defaultSchema))
-    def jsonPathMulti(defaultSchema: Schema): JsonFoldPath = {
-      val a = attrBase(defaultSchema).each.filter(_ => true)
-      subAttribute.map(a.selectDynamic).getOrElse(a)
-    }
-
     def extract(from: Json, defaultSchema: Schema): Json = {
-      val values = jsonPathSingle(defaultSchema).json.getOption(from)
-        .orElse(Some(jsonPathMulti(defaultSchema).json.getAll(from)).filter(_.nonEmpty).map(l => Json.arr(l: _*)))
-        .getOrElse(Json.Null)
-      values
+      val value = basePath(defaultSchema).json.getOption(from).getOrElse(Json.Null)
+      valueOrSubAttribute(value)
     }
+
     def render: String = schema.map(_.asString + ":").getOrElse("") + name + subAttribute.map("." + _).getOrElse("")
   }
   case class FilteredAttributePath(name: String, filter: AFilter, schema: Option[Schema] = None, subAttribute: Option[String] = None)
     extends AttributeSelector {
-    private def attrBase(defaultSchema: Schema): JsonPath =
-      schema.filter(_ != defaultSchema).map(_.asString).map(root.selectDynamic).getOrElse(root).selectDynamic(name)
 
-    def jsonPathSingle(defaultSchema: Schema): JsonPath =
-      subAttribute.map(attrBase(defaultSchema).selectDynamic).getOrElse(attrBase(defaultSchema))
-
-    def jsonPathMulti(defaultSchema: Schema): JsonFoldPath = {
-      val a = attrBase(defaultSchema).each.filter(filter.evaluate)
-      subAttribute.map(a.selectDynamic).getOrElse(a)
-    }
+    def modify(on: Json, defaultSchema: Schema)(f: Json => Either[String, Json]): Either[String, Json] = ???
 
     def render: String = schema.map(_.asString + ":").getOrElse("") + name + s"[${filter.render}]" + subAttribute.map("." + _).getOrElse("")
   }

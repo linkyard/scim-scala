@@ -187,4 +187,31 @@ object Jsons {
       |         ]
       |       }
       |""".stripMargin)
+  val group2 = parse(
+    """
+      |       {
+      |         "id": "6c5bb468-14b2-4183-baf2-06d523e03bd3",
+      |         "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+      |         "displayName": "Group B",
+      |         "meta": {
+      |           "resourceType": "Group",
+      |           "created": "2011-08-01T18:29:50.873Z",
+      |           "lastModified": "2011-08-01T18:29:50.873Z",
+      |           "location": "https://example.com/v2/Groups/6c5bb468-14b2-4183-baf2-06d523e03bd3",
+      |           "version": "W\/\"wGB85s2QJMjiNnuI\""
+      |         },
+      |         "members": [
+      |           {
+      |             "value": "c3a26dd3-27a0-4dec-a2ac-ce211e105f97",
+      |             "$ref":"https://example.com/v2/Groups/c3a26dd3-27a0-4dec-a2ac-ce211e105f97",
+      |             "type": "Group"
+      |           },
+      |           {
+      |             "value": "2819c223-7f76-...413861904646",
+      |             "$ref":"https://example.com/v2/Users/2819c223-7f76-...413861904646",
+      |             "type": "User"
+      |           }
+      |         ]
+      |       }
+      |""".stripMargin)
 }
