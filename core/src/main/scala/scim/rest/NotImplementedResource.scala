@@ -2,6 +2,7 @@ package scim.rest
 
 import cats.Applicative
 import io.circe.Json
+import scim.rest.Resource.{Path, QueryParams}
 
 class NotImplementedResource[F[_] : Applicative] extends Resource[F] {
   override def get(subPath: Path, queryParams: QueryParams): F[Response] = Applicative[F].pure(Response.notImplemented)

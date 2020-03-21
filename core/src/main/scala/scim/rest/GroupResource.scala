@@ -1,9 +1,10 @@
 package scim.rest
 
-import cats.Applicative
+import cats.{Applicative, Monad}
 import io.circe.Json
+import scim.rest.Resource.{Path, QueryParams}
 
-private class GroupResource[F[_]](implicit applicative: Applicative[F]) extends Resource[F] {
+private class GroupResource[F[_]](implicit monad: Monad[F]) extends Resource[F] {
   // TODO
   override def get(subPath: Path, queryParams: QueryParams) = Applicative[F].pure(Response.notImplemented)
   // TODO
