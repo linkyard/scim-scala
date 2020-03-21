@@ -102,7 +102,7 @@ object Arbitraries {
       10 -> filteredAttributePath.arbitrary.map(Some(_)),
     )
     value <- json.arbitrary
-  } yield (PatchOp.Operation(op, path, value)))
+  } yield (PatchOp.Operation(op, path, Some(value).filterNot(_.isNull))))
 
   implicit def patchOp: Arbitrary[PatchOp] = Arbitrary(Gen.nonEmptyListOf(patchOpOperation.arbitrary).map(ops => PatchOp(ops)))
 }
