@@ -41,8 +41,6 @@ lazy val core = (project in file("core"))
     name := "scim",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % Dependencies.cats,
-      "org.typelevel" %% "cats-effect" % Dependencies.catsEffect,
-      "co.fs2" %% "fs2-core" % Dependencies.fs2,
       "io.circe" %% "circe-generic" % Dependencies.circe,
       "io.circe" %% "circe-optics" % Dependencies.circe,
       "com.lihaoyi" %% "fastparse" % Dependencies.fastParse,

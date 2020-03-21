@@ -1,7 +1,6 @@
 package scim.rest
 
-import cats.Applicative
-import cats.effect.Sync
+import cats.{Applicative, Monad}
 import cats.implicits._
 import io.circe.generic.auto._
 import io.circe.syntax._
@@ -10,10 +9,10 @@ import scim.model.Codecs._
 import scim.model.Filter.NoFilter
 import scim.model._
 import scim.spi.SpiError._
-import scim.spi.{Sorting, UserStore}
+import scim.spi.{Paging, Sorting, UserStore}
 
-private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore[F], applicative: Applicative[F], sync: Sync[F]) extends Resource[F] {
-  private def pure[A]: A => F[A] = Applicative[F].pure
+private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore[F], monad: Monad[F]) extends Resource[F] {
+  private def pure[A]: A => F[A] = monad.pure
 
   override def get(subPath: Path, queryParams: QueryParams): F[Response] = subpathToId(subPath) match {
     case Some(id) =>
@@ -92,17 +91,14 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
     body.as[A].left.map(Response.decodingFailed)
 
   private def query(request: SearchRequest): F[Response] = {
+    val paging = Paging(start = request.startIndex.map(_ - 1).map(_ max 0).getOrElse(0), maxResults = request.count.map(_ max 1))
     val sorting = request.sortBy.map(by => Sorting(by, request.sortOrder.getOrElse(SortOrder.default)))
-    val stream = store.search(request.filter.getOrElse(NoFilter), sorting)
-      .drop(request.startIndex.map(i => (i - 1) max 0).getOrElse(0).toLong)
-    stream.compile.toVector.map { users =>
-      val result = request.count.map(users.take).getOrElse(users)
-        .map(_.asJson)
+    store.search(request.filter.getOrElse(NoFilter), paging, sorting).map { users =>
       ListResponse(
         totalResults = users.size,
         startIndex = request.startIndex,
         itemsPerPage = request.count,
-        Resources = Some(result).filter(_.nonEmpty)
+        Resources = Some(users.map(_.asJson)).filter(_.nonEmpty)
       )
     }.map(body => Response.ok(body.asJson))
   }

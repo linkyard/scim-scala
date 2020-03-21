@@ -1,9 +1,9 @@
 package scim.rest
 
-import cats.effect.Sync
+import cats.Monad
 import scim.spi.UserStore
 
-class RestApi[F[_]] private(urlConfig: UrlConfig)(implicit sync: Sync[F], userStore: UserStore[F]) {
+class RestApi[F[_]] private(urlConfig: UrlConfig)(implicit monad: Monad[F], userStore: UserStore[F]) {
   def user: Resource[F] = new UserResource[F](urlConfig)
   def group: Resource[F] = new GroupResource[F]
   def me: Resource[F] = new NotImplementedResource[F]
@@ -11,5 +11,5 @@ class RestApi[F[_]] private(urlConfig: UrlConfig)(implicit sync: Sync[F], userSt
 }
 
 object RestApi {
-  def apply[F[_] : Sync : UserStore](urlConfig: UrlConfig): RestApi[F] = new RestApi[F](urlConfig)
+  def apply[F[_] : Monad : UserStore](urlConfig: UrlConfig): RestApi[F] = new RestApi[F](urlConfig)
 }
