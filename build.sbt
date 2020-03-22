@@ -1,8 +1,12 @@
 import sbt.Keys.libraryDependencies
 ThisBuild / scalaVersion := Dependencies.scala
-ThisBuild / version := "dev-SNAPSHOT"
+ThisBuild / version := "0.0.1-SNAPSHOT"
 ThisBuild / organization := "ch.linkyard.scim"
 ThisBuild / organizationName := "linkyard ag"
+
+ThisBuild / githubOwner := "linkyard"
+ThisBuild / githubRepository := "scim-scala"
+githubTokenSource := TokenSource.Environment("GITHUB_TOKEN") || TokenSource.GitConfig("github.token")
 
 lazy val root = (project in file("."))
   .settings(
@@ -20,6 +24,8 @@ lazy val root = (project in file("."))
       addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full),
       addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
       cancelable in Global := true,
+      githubTokenSource := TokenSource.GitConfig("github.token"),
+      publish := {},
       libraryDependencies ++= Seq(
         "io.kamon" %% "kamon-core" % Dependencies.kamon,
         "com.typesafe.scala-logging" %% "scala-logging" % Dependencies.scalaLogging,
@@ -38,7 +44,8 @@ lazy val root = (project in file("."))
 
 lazy val core = (project in file("core"))
   .settings(
-    name := "scim",
+    name := "scim-scala-core",
+    githubTokenSource := TokenSource.GitConfig("github.token"),
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % Dependencies.cats,
       "io.circe" %% "circe-generic" % Dependencies.circe,
