@@ -268,15 +268,59 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       r2.status should be(200)
       User(r2.body.value).root.active should be(Some(false))
 
-      Users.content should have size(1)
+      Users.content should have size (1)
       Users.content.head should be(User(r2.body.value))
-      Groups.content should have size(1)
+      Groups.content should have size (1)
       Groups.content.head.root.members should be(None)
     }
 
-    it("should delete user")(pending)
+    it("should delete user") {
+      Users.content = Seq(user1)
+      Groups.content = Seq(Group(group1.root.copy(members = Some(Seq(Group.Member(user1.id.get))))))
 
-    it("should sync users")(pending)
+      // Remove user from group
+      val r1 = api.group.patch(Seq("g-a"), Map.empty,
+        body = parse(
+          s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+             |"Operations":[{"value":[{"value":"${user1.id.get}"}],"op":"remove","path":"members"}]}""".stripMargin).value)
+      r1.status should be(200)
+      Group(r1.body.value).root.members should be(None)
+
+      //Delete user (guessed)
+      val r2 = api.user.delete(Seq(user1.id.get), Map.empty)
+      r2.status should be(204)
+
+      Users.content should have size (0)
+      Groups.content should have size (1)
+      Groups.content.head.root.members should be(None)
+    }
+
+    it("should sync users (with correct paging)") {
+      def mkUser(i: Int) = User(User.Root(userName = s"user-$i", id = Some(s"user-$i")))
+
+      val count = 500
+      Users.content = (1 to count).map(mkUser).toList
+
+      // Get users
+      def getThem(pos: Int = 1, pageSize: Int = 100): Seq[User] = {
+        val r = api.user.get(root, Map("count" -> pageSize.toString, "startIndex" -> pos.toString))
+        r.status should be(200)
+        val lr = r.body.value.as[ListResponse].value
+        val start = lr.startIndex.getOrElse(1)
+        start should be(pos)
+        lr.itemsPerPage.value should be(pageSize)
+        lr.totalResults should be(count)
+        val es = lr.Resources.value.map(User.apply)
+        if (start + es.size < lr.totalResults) es ++ getThem(start + es.size, pageSize)
+        else es
+      }
+
+      val r = getThem()
+      r should have size (count)
+      (1 to count).foreach { i =>
+        r(i - 1).root.userName should be(s"user-$i")
+      }
+    }
   }
 
 }
