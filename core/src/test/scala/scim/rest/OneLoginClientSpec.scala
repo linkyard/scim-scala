@@ -138,7 +138,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       val r5 = api.group.patch(Seq("g-a"), Map.empty,
         body = parse(
           s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"$uid"}],"op":"add",
-            |"path":"members"}]}""".stripMargin)
+             |"path":"members"}]}""".stripMargin)
           .value)
       r5.status should be(200)
       val g1 = r5.body.value.as[Group].value
@@ -150,7 +150,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       val r6 = api.group.patch(Seq(gcId), Map.empty,
         body = parse(
           s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"$uid"}],"op":"add",
-            |"path":"members"}]}""".stripMargin)
+             |"path":"members"}]}""".stripMargin)
           .value)
       r6.status should be(200)
       val g2 = r6.body.value.as[Group].value
@@ -250,7 +250,29 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       Groups.content(1) should be(g)
     }
 
-    it("should deactivate user")(pending)
+    it("should deactivate user") {
+      Users.content = Seq(user1)
+      Groups.content = Seq(Group(group1.root.copy(members = Some(Seq(Group.Member(user1.id.get))))))
+
+      // Remove user from group
+      val r1 = api.group.patch(Seq("g-a"), Map.empty,
+        body = parse(
+          s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+             |"Operations":[{"value":[{"value":"${user1.id.get}"}],"op":"remove","path":"members"}]}""".stripMargin).value)
+      r1.status should be(200)
+      Group(r1.body.value).root.members should be(None)
+
+      //Set user to inactive
+      val r2 = api.user.put(Seq(user1.id.get), Map.empty,
+        body = User(user1.root.copy(active = Some(false), id = None)).asJson)
+      r2.status should be(200)
+      User(r2.body.value).root.active should be(Some(false))
+
+      Users.content should have size(1)
+      Users.content.head should be(User(r2.body.value))
+      Groups.content should have size(1)
+      Groups.content.head.root.members should be(None)
+    }
 
     it("should delete user")(pending)
 

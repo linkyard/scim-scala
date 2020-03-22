@@ -83,15 +83,24 @@ private object Helpers {
   }
 
   object Put {
-    def update[F[_] : Applicative, A <: ExtensibleModel[_] : Decoder](subPath: Path, body: Json, url: Option[Id] => URI)(
+    def update[F[_] : Applicative, A <: ExtensibleModel[_] : Decoder: Encoder](subPath: Path, body: Json, url: Option[Id] => URI)(
       update: A => F[Either[UpdateError, A]]): Option[F[Response]] = {
       subpathToId(subPath).map { id =>
         decodeBody[A](body)
-          .flatMap(entity => if (entity.id.contains(id)) Right(entity) else Left(Response.conflict("id mismatch between body and url")))
+          .flatMap(entity =>
+            if (entity.id.isEmpty) addId(entity.json, id).as[A].left.map(Response.decodingFailed)
+            else if (entity.id.contains(id)) Right(entity)
+            else Left(Response.conflict("id mismatch between body and url")))
           .map(update)
           .map(_.map(handleUpdateResult(url)))
           .fold(Applicative[F].pure, identity)
       }
+    }
+
+    private def addId(json: Json, id: String): Json = {
+      json.asObject.map(_.add("id", Json.fromString(id)))
+        .map(Json.fromJsonObject)
+        .getOrElse(json)
     }
   }
 
