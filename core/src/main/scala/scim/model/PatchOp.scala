@@ -28,8 +28,17 @@ object PatchOp {
           case None =>
             addIt(root)(on, context.value)
           case Some(ap@AttributePath(name, _, None)) =>
-            addIt(ap.basePath(context.defaultSchema))(on, context.value)
-          case Some(ap@AttributePath(name, _, Some(_))) =>
+            val jsonPath = ap.basePath(context.defaultSchema)
+            if (jsonPath.json.isEmpty(on)) {
+              val v = if (context.value.isArray) context.value else Json.arr(context.value)
+              on.asObject.map(_.add(name, v))
+                .map(Json.fromJsonObject)
+                .map(Right.apply)
+                .getOrElse(Left("entity must be on object"))
+            } else {
+              addIt(ap.basePath(context.defaultSchema))(on, context.value)
+            }
+          case Some(ap@AttributePath(_, _, Some(_))) =>
             Left("adding a sub attribute is not supported")
           case Some(FilteredAttributePath(_, _, _, _)) =>
             Left("add with filter is not supported")

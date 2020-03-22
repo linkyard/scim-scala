@@ -214,4 +214,19 @@ object Jsons {
       |         ]
       |       }
       |""".stripMargin)
+  val groupEmpty = parse(
+    """
+      |       {
+      |         "id": "6c5bb468-14b2-4183-baf2-06d523e03bd3",
+      |         "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+      |         "displayName": "Group C",
+      |         "meta": {
+      |           "resourceType": "Group",
+      |           "created": "2011-08-01T18:29:50.873Z",
+      |           "lastModified": "2011-08-01T18:29:50.873Z",
+      |           "location": "https://example.com/v2/Groups/6c5bb468-14b2-4183-baf2-06d523e03bd3",
+      |           "version": "W\/\"wGB85s2QJMjiNnuI\""
+      |         }
+      |       }
+      |""".stripMargin)
 }

@@ -80,6 +80,56 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
         patch.applyTo(Schema.Group)(before) should be(Right(after))
       }
 
+      it("should add a first member to a group (element to Null->array)") {
+        val patch = patchOp(
+          """
+            |   { "schemas":
+            |      ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+            |     "Operations":[
+            |       {
+            |        "op":"add",
+            |        "path":"members",
+            |        "value":[
+            |         {
+            |           "display": "Babs Jensen",
+            |           "$ref":
+            |   "https://example.com/v2/Users/2819c223...413861904646",
+            |           "value": "2819c223-7f76-453a-919d-413861904646"
+            |         }
+            |        ]
+            |       }
+            |     ]
+            |   }
+            |""".stripMargin)
+
+        val before = Jsons.groupEmpty
+
+        val after = parseJson(
+          """
+            |       {
+            |         "id": "6c5bb468-14b2-4183-baf2-06d523e03bd3",
+            |         "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+            |         "displayName": "Group C",
+            |         "meta": {
+            |           "resourceType": "Group",
+            |           "created": "2011-08-01T18:29:50.873Z",
+            |           "lastModified": "2011-08-01T18:29:50.873Z",
+            |           "location": "https://example.com/v2/Groups/6c5bb468-14b2-4183-baf2-06d523e03bd3",
+            |           "version": "W\/\"wGB85s2QJMjiNnuI\""
+            |         },
+            |         "members": [
+            |           {
+            |             "display": "Babs Jensen",
+            |             "$ref": "https://example.com/v2/Users/2819c223...413861904646",
+            |             "value": "2819c223-7f76-453a-919d-413861904646"
+            |           }
+            |         ]
+            |       }
+            |""".stripMargin)
+
+        patch.applyTo(Schema.Group)(before) should be(Right(after))
+      }
+
       it("should add new attribute") {
         val patch = patchOp(
           """
