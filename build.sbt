@@ -1,6 +1,5 @@
 import sbt.Keys.libraryDependencies
 ThisBuild / scalaVersion := Dependencies.scala
-ThisBuild / version := "0.0.1-SNAPSHOT"
 ThisBuild / organization := "ch.linkyard.scim"
 ThisBuild / organizationName := "linkyard ag"
 
