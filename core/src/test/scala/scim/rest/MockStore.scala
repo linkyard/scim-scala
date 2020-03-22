@@ -15,12 +15,15 @@ trait MockStore[A <: ExtensibleModel[_]] {
   protected def schema: Schema
   protected def duplicate(a: A, b: A): Boolean
   protected implicit def decoder: Decoder[A]
+
   def get(id: String) = content.find(_.id.contains(id)).toRight(DoesNotExist(id))
+
   def search(filter: Filter, paging: Paging, sorting: Option[Sorting]) = {
     val all = content.filter(u => filter.evaluate(u.asJson, schema))
-    val page = all.slice(paging.start, paging.start + paging.maxResults.getOrElse(Int.MaxValue))
-    SearchResult(page, all.size)
+    val sorted = sorting.map(_.applyTo(all)).getOrElse(all)
+    paging.applyTo(sorted)
   }
+
   def create(entity: A) = {
     assert(entity.id.isEmpty)
     content.find(duplicate(_, entity)).map(_ => Left(AlreadyExists))
@@ -31,6 +34,7 @@ trait MockStore[A <: ExtensibleModel[_]] {
         Right(withId)
       }
   }
+
   def update(entity: A) = {
     assert(entity.id.isDefined)
     content.find(_.id == entity.id)
