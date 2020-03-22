@@ -1,9 +1,12 @@
 package scim.rest
 
 import java.util.UUID
+import cats.Id
+import io.circe.Json.JString
 import io.circe.{Decoder, Json}
-import scim.model.{ExtensibleModel, Filter, Schema}
-import scim.spi.{Paging, SearchResult, Sorting}
+import scim.model.Filter.{AttributePath, Comparison, StringValue}
+import scim.model.{Codecs, ExtensibleModel, Filter, Group, Schema, User}
+import scim.spi.{GroupStore, Paging, SearchResult, Sorting, UserStore}
 import scim.spi.SpiError._
 
 /** Mutable store in the Id monad */
@@ -42,6 +45,49 @@ trait MockStore[A <: ExtensibleModel[_]] {
     else {
       content = after
       Right(())
+    }
+  }
+}
+
+object MockStore {
+  trait MockUserStore extends UserStore[Id] with MockStore[User] {
+    override protected def schema = Schema.User
+    override protected def duplicate(a: User, b: User) = a.root.userName == b.root.userName
+    override protected implicit def decoder: Decoder[User] = Codecs.userDecoder
+  }
+  trait MockGroupStore extends GroupStore[Id] with MockStore[Group] {
+    override protected def schema = Schema.Group
+    override protected def duplicate(a: Group, b: Group) = a.root.displayName == b.root.displayName
+    override protected implicit def decoder: Decoder[Group] = Codecs.groupDecoder
+  }
+  trait MockOptimizedGroupStore extends GroupStore[Id] with MockStore[Group] {
+    var wasOptimized = false
+    override protected def schema = Schema.Group
+    override protected def duplicate(a: Group, b: Group) = a.root.displayName == b.root.displayName
+    override protected implicit def decoder: Decoder[Group] = Codecs.groupDecoder
+
+    override def addToGroup(groupId: String, members: Set[Group.Member]) = Some {
+      wasOptimized = true
+      content.find(_.id.contains(groupId))
+        .map { group =>
+          val ms = members ++ group.root.members.getOrElse(Seq.empty)
+          val g = Group(group.root.copy(members = Some(ms.toSeq)))
+          content = content.filterNot(_.id.contains(groupId)) :+ g
+          Right(())
+        }.getOrElse(Left(DoesNotExist(groupId)))
+    }
+
+    override def removeFromGroup(groupId: String, filter: Filter) = filter match {
+      case Comparison.Equal(AttributePath("value", None, None), StringValue(value)) =>
+        wasOptimized = true
+        Some(content.find(_.id.contains(groupId))
+          .map { group =>
+            val ms = group.root.members.getOrElse(Seq.empty).filterNot(_.value == value)
+            val g = Group(group.root.copy(members = Some(ms.toSeq)))
+            content = content.filterNot(_.id.contains(groupId)) :+ g
+            Right(())
+          }.getOrElse(Left(DoesNotExist(groupId))))
+      case _ => None
     }
   }
 }

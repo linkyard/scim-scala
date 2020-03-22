@@ -21,6 +21,7 @@ object Response {
   def ok: Response = Response(200, None)
   def ok(body: Json, locationHeader: Option[URI] = None): Response = Response(200, Some(body), locationHeader = locationHeader)
   def noContent: Response = Response(204, None)
+  def noContent(locationHeader: URI): Response = Response(204, None, locationHeader = Some(locationHeader))
 
   def error(error: Error): Response = Response(error.status, error.asJson)
 

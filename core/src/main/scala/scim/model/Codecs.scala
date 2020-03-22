@@ -48,4 +48,5 @@ object Codecs {
   implicit val userEncoder: Encoder[User] = _.asJson
   implicit val groupDecoder: Decoder[Group] = Decoder.decodeJson.map(Group.apply)
   implicit val groupEncoder: Encoder[Group] = _.asJson
+  implicit val groupMemberCodec: Codec[Group.Member] = deriveCodec
 }

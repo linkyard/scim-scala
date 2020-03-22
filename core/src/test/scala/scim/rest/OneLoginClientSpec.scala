@@ -1,40 +1,26 @@
 package scim.rest
 
 import cats._
+import io.circe.parser.parse
 import io.circe.{Decoder, Json, ParsingFailure}
-import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
-import scim.model.{Codecs, Group, ListResponse, Schema, User}
+import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import scim.model.Codecs._
+import scim.model.{Group, ListResponse, User}
+import scim.rest.MockStore.{MockGroupStore, MockUserStore}
 import scim.rest.Resource.Path
-import scim.spi.{GroupStore, UserStore}
-import io.circe.parser.parse
+import TestHelpers._
 
 /** Simulates calls as done by OneLogin as of 2020-03-21. */
 class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with BeforeAndAfterEach {
-  private implicit object Users extends UserStore[Id] with MockStore[User] {
-    override protected def schema = Schema.User
-    override protected def duplicate(a: User, b: User) = a.root.userName == b.root.userName
-    override protected implicit def decoder: Decoder[User] = Codecs.userDecoder
-  }
-  private implicit object Groups extends GroupStore[Id] with MockStore[Group] {
-    override protected def schema = Schema.Group
-    override protected def duplicate(a: Group, b: Group) = a.root.displayName == b.root.displayName
-    override protected implicit def decoder: Decoder[Group] = Codecs.groupDecoder
-  }
+  private implicit object Users extends MockUserStore
+  private implicit object Groups extends MockGroupStore
 
   private val urlRoot = "https://host.local/scim/v2"
   private val api = RestApi[Id](UrlConfig(urlRoot))
 
   private val root: Path = Seq.empty
-
-  private implicit class ParserValues(r: Either[ParsingFailure, Json]) {
-    def value: Json = r.getOrElse(fail(r.left.getOrElse(fail()).message))
-  }
-  private implicit class DecoderValues[A](r: Decoder.Result[A]) {
-    def value: A = r.getOrElse(fail(r.left.getOrElse(fail()).message))
-  }
 
   override def beforeEach(): Unit = {
     Users.content = Seq.empty

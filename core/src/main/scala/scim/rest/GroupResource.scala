@@ -3,6 +3,7 @@ package scim.rest
 import cats.Monad
 import io.circe.Json
 import scim.model.Codecs._
+import scim.model.Group.Member
 import scim.model._
 import scim.rest.Resource.{Path, QueryParams}
 import scim.spi.GroupStore
@@ -33,7 +34,8 @@ private class GroupResource[F[_]](urlConfig: UrlConfig)(implicit store: GroupSto
   }
 
   override def patch(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
-    Helpers.Patch.patchViaJson(subPath, body, urlConfig.group)(store.get, store.update, Schema.User)
+    Helpers.Patch.patchArrayAttribute[F, Member](subPath, body, urlConfig.group)("members", store.addToGroup, store.removeFromGroup)
+      .orElse(Helpers.Patch.patchViaJson(subPath, body, urlConfig.group)(store.get, store.update, Schema.User))
       .getOrElse(pure(Response.notImplemented))
   }
 }
