@@ -81,6 +81,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       r1.status should be(200)
       r1.body.value.as[ListResponse].value.totalResults should be(0)
 
+      // Create the user
       val r2 = api.user.post(root, Map.empty,
         body = parse(
           """{"userName":"peter.meier@example.com","name":{"givenName":"Peter","familyName":"Meier"},
@@ -94,7 +95,79 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       Users.content.head.root.userName should be("peter.meier@example.com")
     }
 
-    it("should create a new user (with a group assigned)")(pending)
+    it("should create a new user (with a group assigned)") {
+      Users.content = Seq.empty
+      Groups.content = Seq(group1)
+
+      //Check if user exists
+      val r1 = api.user.get(root, Map("filter" -> "userName eq \"hans.mueller\""))
+      r1.status should be(200)
+      r1.body.value.as[ListResponse].value.totalResults should be(0)
+
+      // Create the user
+      val r2 = api.user.post(root, Map.empty,
+        body = parse(
+          """{"userName":"peter.meier@example.com","name":{"givenName":"Peter","familyName":"Meier"},
+            |"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"emails":[{"primary":true,"type":"work","value":"pm@example.com"}],
+            |"active":true}""".stripMargin).value)
+      r2.status should be(200)
+      val user = r2.body.value.as[User].value
+      user.id.isDefined should be(true)
+      user.root.userName should be("peter.meier@example.com")
+      Users.content should have size 1
+      Users.content.head.root.userName should be("peter.meier@example.com")
+      val uid = user.id.value
+
+      //Look for groups
+      val r3 = api.group.get(root, Map("count" -> "100", "startIndex" -> "1"))
+      r3.status should be(200)
+      val lr = r3.body.value.as[ListResponse].value
+      lr.totalResults should be(1)
+      lr.Resources.value.head.as[Group].value should be(group1)
+
+      //Create missing group
+      val r4 = api.group.post(root, Map.empty,
+        body = parse("""{"displayName":"Group C","schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"]}""").value)
+      r4.status should be(200)
+      val gc = r4.body.value.as[Group].value
+      gc.id.isDefined should be(true)
+      val gcId = gc.id.value
+      gc.root.displayName should be("Group C")
+
+      //Add user to group 1
+      val r5 = api.group.patch(Seq("g-a"), Map.empty,
+        body = parse(
+          s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"$uid"}],"op":"add",
+            |"path":"members"}]}""".stripMargin)
+          .value)
+      r5.status should be(200)
+      val g1 = r5.body.value.as[Group].value
+      g1.id should be(group1.id)
+      g1.root.members.value should have size 1
+      g1.root.members.value.head.value should be(uid)
+
+      //Add user to group 2
+      val r6 = api.group.patch(Seq(gcId), Map.empty,
+        body = parse(
+          s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"$uid"}],"op":"add",
+            |"path":"members"}]}""".stripMargin)
+          .value)
+      r6.status should be(200)
+      val g2 = r6.body.value.as[Group].value
+      g2.id should be(gc.id)
+      g2.root.members.value should have size 1
+      g2.root.members.value.head.value should be(uid)
+
+      Groups.content should have size 2
+      val tg1 = Groups.content.head
+      tg1.root.displayName should be("Group A")
+      tg1.root.members.value should have size 1
+      tg1.root.members.value.head.value should be(uid)
+      val rg2 = Groups.content(1)
+      rg2.root.displayName should be("Group C")
+      rg2.root.members.value should have size 1
+      rg2.root.members.value.head.value should be(uid)
+    }
 
     it("should update user") {
       Users.content = Seq(user1, user2)
@@ -121,7 +194,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       lr.totalResults should be(1)
       lr.Resources.value.head.as[Group].value should be(group1)
 
-      //Add group to user
+      //Add user to group
       val r3 = api.group.patch(Seq("g-a"), Map.empty,
         body = parse(
           """{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"a-id-1"}],"op":"add",
@@ -132,6 +205,9 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       g.id should be(group1.id)
       g.root.members.value should have size 1
       g.root.members.value.head.value should be("a-id-1")
+
+      Groups.content should have size 1
+      Groups.content.head should be(g)
     }
 
     it("should add a new group to existing user when the group did not exist before") {
@@ -159,7 +235,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       val gcId = gc.id.value
       gc.root.displayName should be("Group C")
 
-      //Add group to user
+      //Add user to group
       val r4 = api.group.patch(Seq(gcId), Map.empty,
         body = parse(
           """{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"a-id-1"}],"op":"add",
@@ -173,8 +249,6 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       Groups.content should have size 2
       Groups.content(1) should be(g)
     }
-
-    //{"displayName":"mycoltools","schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"]}
 
     it("should deactivate user")(pending)
 
