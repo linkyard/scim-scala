@@ -6,12 +6,7 @@ import io.circe.syntax._
 import scim.model.Error
 import scim.model.Codecs._
 
-case class Response(status: Int, body: Option[Json] = None, locationHeader: Option[URI] = None) {
-  def headers: Map[String, String] = {
-    locationHeader.map(v => Map("Location" -> v.toString)).toSeq
-      .fold(Response.defaultHeaders)(_ ++ _)
-  }
-}
+case class Response(status: Int, body: Option[Json] = None, locationHeader: Option[URI] = None)
 
 object Response {
   def apply(status: Int, body: Json): Response = Response(status, Some(body))

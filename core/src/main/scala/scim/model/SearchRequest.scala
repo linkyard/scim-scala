@@ -1,7 +1,5 @@
 package scim.model
 
-import io.circe.Json
-
 
 /** RFC 7644 3.4.3 */
 case class SearchRequest(

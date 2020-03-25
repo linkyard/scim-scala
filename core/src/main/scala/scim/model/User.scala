@@ -16,7 +16,7 @@ case class User(json: Json) extends ExtensibleModel[Root] {
 }
 
 object User {
-  def apply(root: Root): User = User(root.asJson)
+  def apply(root: Root): User = User(root.asJson.deepDropNullValues)
 
   case class Root(
     userName: String,

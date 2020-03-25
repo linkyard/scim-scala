@@ -13,7 +13,7 @@ case class Group(json: Json) extends ExtensibleModel[Root] {
 }
 
 object Group {
-  def apply(root: Root): Group = Group(root.asJson)
+  def apply(root: Root): Group = Group(root.asJson.deepDropNullValues)
 
   case class Root(
     id: Option[String],
