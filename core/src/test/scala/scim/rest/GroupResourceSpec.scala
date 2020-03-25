@@ -30,7 +30,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
     val group2 = Group(Jsons.group2)
 
     def tests(withIt: (Boolean => ((GroupResource[Id], MockStore[Group]) => Unit) => Unit)): Unit = {
-      it("should use update if patched with single adds on member")(withIt(true) { (rest, store) =>
+      it("should update if patched with single adds on member")(withIt(true) { (rest, store) =>
         store.content = Seq(group1, group2)
         val r = rest.patch(Seq("g1"), Map.empty,
           body = parse(
@@ -64,7 +64,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         members.exists(_.value == "u-2") should be(true)
       })
 
-      it("should use update if patched with multiple adds on member")(withIt(true) { (rest, store) =>
+      it("should update if patched with multiple adds on member")(withIt(true) { (rest, store) =>
         store.content = Seq(group1, group2)
         val r = rest.patch(Seq("g1"), Map.empty,
           body = parse(
@@ -102,7 +102,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         members.exists(_.value == "u-4") should be(true)
       })
 
-      it("should use update if patched with single remove on member")(withIt(true) { (rest, store) =>
+      it("should update if patched with single remove on member")(withIt(true) { (rest, store) =>
         store.content = Seq(group1b, group2)
         val r = rest.patch(Seq("g1"), Map.empty,
           body = parse(
@@ -112,6 +112,38 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
               |  "Operations": [{
               |      "op": "remove",
               |      "path": "members[value eq \"u-1\"]"
+              |    }]
+              |}
+              |""".stripMargin).value
+        )
+        if (r.status == 200) {
+          r.status should be(200)
+          Group(r.body.value).id.value should be("g1")
+          Group(r.body.value).root should be(Group.Root(id = Some("g1"), displayName = "Group 1",
+            members = Some(Seq(Member("u-2"), Member("u-3")))))
+        } else {
+          r.status should be(204)
+          r.body should be(None)
+        }
+
+        store.content should have size 2
+        val members = store.content.find(_.id.contains("g1")).value.root.members.value
+        members should have size 2
+        members.exists(_.value == "u-2") should be(true)
+        members.exists(_.value == "u-3") should be(true)
+      })
+
+      it("should update if patched with single remove on member (alternative/weird way)")(withIt(true) { (rest, store) =>
+        store.content = Seq(group1b, group2)
+        val r = rest.patch(Seq("g1"), Map.empty,
+          body = parse(
+            """
+              |{
+              |  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+              |  "Operations": [{
+              |      "op": "remove",
+              |      "path": "members",
+              |      "value": [{"value": "u-1"}]
               |    }]
               |}
               |""".stripMargin).value

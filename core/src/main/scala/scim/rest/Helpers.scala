@@ -5,11 +5,11 @@ import cats.{Applicative, Monad}
 import scim.model.{ExtensibleModel, Filter, ListResponse, PatchOp, Schema, SearchRequest, SortOrder, User}
 import scim.rest.Resource.{Path, QueryParams}
 import cats.implicits._
-import io.circe.Json.JString
 import io.circe.{Decoder, Encoder, Json}
 import io.circe.syntax._
 import scim.model.Codecs._
-import scim.model.Filter.{AttributePath, AttributeSelector, Comparison, FilteredAttributePath, NoFilter}
+import scim.model.Filter.Comparison.Equal
+import scim.model.Filter.{AFilter, AttributePath, AttributeSelector, Comparison, FilteredAttributePath, NoFilter, StringValue}
 import scim.model.PatchOp.OperationType
 import scim.spi.{Paging, SearchResult, Sorting}
 import scim.spi.SpiError.{AlreadyExists, Conflict, CreationError, DoesNotExist, MalformedData, MissingData, UpdateError}
@@ -140,21 +140,31 @@ private object Helpers {
     }
 
     type ArrayAddFun[F[_], M] = (String, Set[M]) => Option[F[Either[UpdateError, Unit]]]
-    type ArrayRemoveFun[F[_], M] = (String, Filter) => Option[F[Either[UpdateError, Unit]]]
+    type ArrayRemoveFun[F[_]] = (String, Filter) => Option[F[Either[UpdateError, Unit]]]
 
     def patchArrayAttribute[F[_] : Applicative, M: Decoder](subPath: Path, body: Json, url: Option[Id] => URI)(
-      attributeName: String, add: ArrayAddFun[F, M], remove: ArrayRemoveFun[F, M]): Option[F[Response]] = subpathToId(subPath).flatMap { id =>
+      attributeName: String, add: ArrayAddFun[F, M], remove: ArrayRemoveFun[F]): Option[F[Response]] = subpathToId(subPath).flatMap { id =>
       decodeBody[PatchOp](body).map { op =>
         def operationFor(op: PatchOp.Operation): Option[F[Either[UpdateError, Unit]]] = (op.path, op.op) match {
           case (Some(AttributePath(name, None, None)), OperationType.Add) if name == attributeName =>
             op.value.flatMap(_.asArray).map(_.traverse(_.as[M])).flatMap(_.toOption).map(_.toSet)
               .flatMap(add(id, _))
 
+          case (Some(AttributePath(name, None, None)), OperationType.Remove) if name == attributeName =>
+            op.value.flatMap(_.asArray)
+              .filter(_.nonEmpty)
+              .flatMap(_.traverse(_.asObject.filter(_.keys.toList == List("value")))) // only support if every value contains only 'value'
+              .flatMap(_.traverse(_.apply("value").flatMap(_.asString))) // and 'value' must be a string
+              .map(_.map(v => Equal(AttributePath("value", None, None), StringValue(v))))
+              .map(_.reduceLeft[AFilter]((a, b) => Filter.Or(a, b)))
+              .flatMap(remove(id, _))
+
           case (Some(FilteredAttributePath(name, filter, None, None)), OperationType.Remove) if name == attributeName =>
             remove(id, filter)
 
           case _ => None
         }
+
 
         op.Operations.map(operationFor).toList match {
           case Some(op) :: Nil => Some(op.map {

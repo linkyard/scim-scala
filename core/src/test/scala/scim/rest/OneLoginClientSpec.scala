@@ -2,20 +2,19 @@ package scim.rest
 
 import cats._
 import io.circe.parser.parse
-import io.circe.{Decoder, Json, ParsingFailure}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import scim.model.Codecs._
 import scim.model.{Group, ListResponse, User}
-import scim.rest.MockStore.{MockGroupStore, MockUserStore}
+import scim.rest.MockStore.{MockOptimizedGroupStore, MockUserStore}
 import scim.rest.Resource.Path
-import TestHelpers._
+import scim.rest.TestHelpers._
 
 /** Simulates calls as done by OneLogin as of 2020-03-21. */
 class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with BeforeAndAfterEach {
   private implicit object Users extends MockUserStore
-  private implicit object Groups extends MockGroupStore
+  private implicit object Groups extends MockOptimizedGroupStore
 
   private val urlRoot = "https://host.local/scim/v2"
   private val api = RestApi[Id](UrlConfig(urlRoot))
@@ -73,12 +72,14 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
           """{"userName":"peter.meier@example.com","name":{"givenName":"Peter","familyName":"Meier"},
             |"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"emails":[{"primary":true,"type":"work","value":"pm@example.com"}],
             |"active":true}""".stripMargin).value)
-      r2.status should be(200)
-      val user = r2.body.value.as[User].value
-      user.id.isDefined should be(true)
-      user.root.userName should be("peter.meier@example.com")
-      Users.content should have size 1
-      Users.content.head.root.userName should be("peter.meier@example.com")
+      if (r2.status != 204) {
+        r2.status should be(200)
+        val user = r2.body.value.as[User].value
+        user.id.isDefined should be(true)
+        user.root.userName should be("peter.meier@example.com")
+        Users.content should have size 1
+        Users.content.head.root.userName should be("peter.meier@example.com")
+      }
     }
 
     it("should create a new user (with a group assigned)") {
@@ -126,11 +127,13 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
           s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"$uid"}],"op":"add",
              |"path":"members"}]}""".stripMargin)
           .value)
-      r5.status should be(200)
-      val g1 = r5.body.value.as[Group].value
-      g1.id should be(group1.id)
-      g1.root.members.value should have size 1
-      g1.root.members.value.head.value should be(uid)
+      if (r5.status != 204) {
+        r5.status should be(200)
+        val g1 = r5.body.value.as[Group].value
+        g1.id should be(group1.id)
+        g1.root.members.value should have size 1
+        g1.root.members.value.head.value should be(uid)
+      }
 
       //Add user to group 2
       val r6 = api.group.patch(Seq(gcId), Map.empty,
@@ -138,11 +141,13 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
           s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"$uid"}],"op":"add",
              |"path":"members"}]}""".stripMargin)
           .value)
-      r6.status should be(200)
-      val g2 = r6.body.value.as[Group].value
-      g2.id should be(gc.id)
-      g2.root.members.value should have size 1
-      g2.root.members.value.head.value should be(uid)
+      if (r6.status != 204) {
+        r6.status should be(200)
+        val g2 = r6.body.value.as[Group].value
+        g2.id should be(gc.id)
+        g2.root.members.value should have size 1
+        g2.root.members.value.head.value should be(uid)
+      }
 
       Groups.content should have size 2
       val tg1 = Groups.content.head
@@ -186,14 +191,19 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
           """{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"a-id-1"}],"op":"add",
             |"path":"members"}]}""".stripMargin)
           .value)
-      r3.status should be(200)
-      val g = r3.body.value.as[Group].value
+      if (r3.status != 204) {
+        r3.status should be(200)
+        val g = r3.body.value.as[Group].value
+        g.id should be(group1.id)
+        g.root.members.value should have size 1
+        g.root.members.value.head.value should be("a-id-1")
+      }
+
+      Groups.content should have size 1
+      val g = Groups.content.head
       g.id should be(group1.id)
       g.root.members.value should have size 1
       g.root.members.value.head.value should be("a-id-1")
-
-      Groups.content should have size 1
-      Groups.content.head should be(g)
     }
 
     it("should add a new group to existing user when the group did not exist before") {
@@ -227,26 +237,34 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
           """{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"a-id-1"}],"op":"add",
             |"path":"members"}]}""".stripMargin)
           .value)
-      r4.status should be(200)
-      val g = r4.body.value.as[Group].value
+      if (r4.status != 204) {
+        r4.status should be(200)
+        val g = r4.body.value.as[Group].value
+        g.id should be(gc.id)
+        g.root.members.value should have size 1
+        g.root.members.value.head.value should be("a-id-1")
+      }
+
+      Groups.content should have size 2
+      val g = Groups.content(1)
       g.id should be(gc.id)
       g.root.members.value should have size 1
       g.root.members.value.head.value should be("a-id-1")
-      Groups.content should have size 2
-      Groups.content(1) should be(g)
     }
 
     it("should deactivate user") {
       Users.content = Seq(user1)
-      Groups.content = Seq(Group(group1.root.copy(members = Some(Seq(Group.Member(user1.id.get))))))
+      Groups.content = Seq(Group(group1.root.copy(members = Some(Seq(Group.Member(user1.id.get), Group.Member(user2.id.get))))))
 
       // Remove user from group
       val r1 = api.group.patch(Seq("g-a"), Map.empty,
         body = parse(
           s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
              |"Operations":[{"value":[{"value":"${user1.id.get}"}],"op":"remove","path":"members"}]}""".stripMargin).value)
-      r1.status should be(200)
-      Group(r1.body.value).root.members should be(None)
+      if (r1.status != 204) {
+        r1.status should be(200)
+        Group(r1.body.value).root.members should be(None)
+      }
 
       //Set user to inactive
       val r2 = api.user.put(Seq(user1.id.get), Map.empty,
@@ -257,7 +275,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       Users.content should have size (1)
       Users.content.head should be(User(r2.body.value))
       Groups.content should have size (1)
-      Groups.content.head.root.members should be(None)
+      Groups.content.head.root.members should be(Some(Seq(Group.Member(user2.id.get))))
     }
 
     it("should delete user") {
@@ -269,8 +287,10 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
         body = parse(
           s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
              |"Operations":[{"value":[{"value":"${user1.id.get}"}],"op":"remove","path":"members"}]}""".stripMargin).value)
-      r1.status should be(200)
-      Group(r1.body.value).root.members should be(None)
+      if (r1.status != 204) {
+        r1.status should be(200)
+        Group(r1.body.value).root.members should be(None)
+      }
 
       //Delete user (guessed)
       val r2 = api.user.delete(Seq(user1.id.get), Map.empty)
@@ -278,7 +298,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
 
       Users.content should have size (0)
       Groups.content should have size (1)
-      Groups.content.head.root.members should be(None)
+      Groups.content.head.root.members.getOrElse(Nil) should have size 0
     }
 
     it("should sync users (with correct paging)") {

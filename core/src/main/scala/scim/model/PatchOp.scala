@@ -74,9 +74,11 @@ object PatchOp {
         (context.path match {
           case None => Left("no target")
           case Some(ap@AttributePath(_, _, None)) =>
-            Right(ap.basePath(context.defaultSchema).json.modify(_ => Json.Null)(on))
+            if (context.value.isNull) Right(ap.basePath(context.defaultSchema).json.modify(_ => Json.Null)(on))
+            else removeFiltered(ap.basePath(context.defaultSchema), v => context.value.asArray.map(_.contains(v)).getOrElse(v == context.value))(on)
           case Some(ap@AttributePath(_, _, Some(sub))) =>
-            removeOnSub(ap.basePath(context.defaultSchema), sub, _ => true)(on)
+            if (context.value.isNull) removeOnSub(ap.basePath(context.defaultSchema), sub, _ => true)(on)
+            else removeOnSub(ap.basePath(context.defaultSchema), sub, v => context.value.asArray.map(_.contains(v)).getOrElse(v == context.value))(on)
           case Some(ap@FilteredAttributePath(_, filter, _, None)) =>
             removeFiltered(ap.basePath(context.defaultSchema), filter.evaluate(_, context.defaultSchema))(on)
           case Some(ap@FilteredAttributePath(_, filter, _, Some(sub))) =>
