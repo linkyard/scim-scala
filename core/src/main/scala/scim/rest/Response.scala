@@ -20,8 +20,8 @@ object Response {
 
   def error(error: Error): Response = Response(error.status, error.asJson)
 
-  def decodingFailed(failure: DecodingFailure): Response = decodingFailed(failure.message)
-  def decodingFailed(message: String): Response = error(Error(400,
+  def decodingFailed(failure: DecodingFailure): Response = malformedData(failure.message)
+  def malformedData(message: String): Response = error(Error(400,
     detail = Some(s"Parsing failed: $message"), scimType = Some("invalidValue")))
   def missingValue(detail: String): Response = error(Error(400,
     detail = Some(s"Missing value: $detail"), scimType = Some("invalidValue")))

@@ -47,7 +47,7 @@ private object Helpers {
           sortOrder = sortOrder,
           attributes = None,
           excludedAttributes = None,
-        )).left.map(Response.decodingFailed)
+        )).left.map(Response.malformedData)
           .map(executeQueryRequest(query))
           .fold(Applicative[F].pure, identity)
       } else None
@@ -66,7 +66,7 @@ private object Helpers {
             case Left(AlreadyExists) =>
               Response.alreadyExists
             case Left(MalformedData(details)) =>
-              Response.decodingFailed(details)
+              Response.malformedData(details)
             case Left(MissingData(details)) =>
               Response.missingValue(details)
           })
@@ -127,7 +127,7 @@ private object Helpers {
             retrieve(id).flatMap {
               case Right(current) =>
                 op.applyTo(current.schema)(current.json)
-                  .left.map(Response.decodingFailed)
+                  .left.map(Response.malformedData)
                   .flatMap(_.as[A].left.map(Response.decodingFailed))
                   .map(update)
                   .map(_.map(handleUpdateResult(url)))
@@ -161,6 +161,8 @@ private object Helpers {
             case Right(()) => Response.noContent(url(Some(id)))
             case Left(DoesNotExist(id)) => Response.notFound(id)
             case Left(Conflict(details)) => Response.conflict(details)
+            case Left(MalformedData(details)) => Response.malformedData(details)
+            case Left(MissingData(details)) => Response.missingValue(details)
           })
           case None :: Nil => None // unsupported operation
           case a if a.length > 1 => None // multiple operations are not supported (since no transactions)
@@ -176,6 +178,8 @@ private object Helpers {
         Response.ok(updated.asJson, locationHeader = Some(url(updated.id)))
       case Left(DoesNotExist(id)) => Response.notFound(id)
       case Left(Conflict(details)) => Response.conflict(details)
+      case Left(MalformedData(details)) => Response.malformedData(details)
+      case Left(MissingData(details)) => Response.missingValue(details)
     }
   }
 
