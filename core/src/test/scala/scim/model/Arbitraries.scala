@@ -1,13 +1,19 @@
 package scim.model
 
+import java.net.URI
 import io.circe.Json
 import io.circe.testing.ArbitraryInstances
-import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.{Arbitrary, Gen, ScalacheckShapeless}
 import scim.model.Filter.Comparison._
 import scim.model.Filter._
 
 object Arbitraries {
   implicit val json: Arbitrary[Json] = new ArbitraryInstances {}.arbitraryJson
+
+  implicit val uri: Arbitrary[URI] = Arbitrary(Gen.oneOf(
+    URI.create("https://example.local/aaa"),
+    URI.create("https://host.local/bbb"),
+  ))
 
   implicit def value: Arbitrary[Value] = Arbitrary(Gen.frequency(
     (1, Gen.const(NullValue)),

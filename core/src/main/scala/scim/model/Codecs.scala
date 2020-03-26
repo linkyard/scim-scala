@@ -7,6 +7,7 @@ import io.circe.generic.semiauto._
 import io.circe.{Codec, Decoder, Encoder}
 import scim.model.Filter.AttributeSelector
 import scim.model.PatchOp.OperationType
+import scim.model.ServiceProviderConfiguration.{AuthenticationOptions, BulkOptions, FilterOptions, OptionSupported}
 
 object Codecs {
   implicit val localeDecoder: Decoder[Locale] = Decoder.decodeString.map(v => new Locale(v))
@@ -39,10 +40,15 @@ object Codecs {
   }
   implicit val patchOpOperationCodec: Codec[PatchOp.Operation] = deriveCodec
   implicit val patchOpCodec: Codec[PatchOp] = deriveCodec
+  implicit val optionSupportedCodec: Codec[OptionSupported] = deriveCodec
+  implicit val bulkOptionsCodec: Codec[BulkOptions] = deriveCodec
+  implicit val filterOptionsCodec: Codec[FilterOptions] = deriveCodec
+  implicit val authenticationOptionsCodec: Codec[AuthenticationOptions] = deriveCodec
 
   implicit val errorCodec: Codec[Error] = deriveCodec
   implicit val searchRequestCodec: Codec[SearchRequest] = deriveCodec
   implicit val listResponseCodec: Codec[ListResponse] = deriveCodec
+  implicit val serviceProviderConfigurationCodec: Codec[ServiceProviderConfiguration] = deriveCodec
 
   implicit val userDecoder: Decoder[User] = Decoder.decodeJson.map(User.apply)
   implicit val userEncoder: Encoder[User] = _.asJson
