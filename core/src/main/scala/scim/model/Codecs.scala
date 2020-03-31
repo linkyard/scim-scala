@@ -27,7 +27,7 @@ object Codecs {
   implicit val sortOrderDecoder: Decoder[SortOrder] = Decoder.decodeString.emap(SortOrder.parse)
   implicit val sortOrderEncoder: Encoder[SortOrder] = Encoder.encodeString.contramap(_.asString)
 
-  implicit val operationTypeDecoder: Decoder[OperationType] = Decoder.decodeString.emap {
+  implicit val operationTypeDecoder: Decoder[OperationType] = Decoder.decodeString.map(_.toLowerCase).emap {
     case "add" => Right(OperationType.Add)
     case "remove" => Right(OperationType.Remove)
     case "replace" => Right(OperationType.Replace)
