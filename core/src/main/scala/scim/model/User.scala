@@ -2,15 +2,18 @@ package scim.model
 
 import java.net.URI
 import java.util.Locale
+import com.typesafe.scalalogging.LazyLogging
+import io.circe.Decoder.Result
 import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.syntax._
 import scim.model.User.Root
 import Codecs._
 
-case class User(json: Json) extends ExtensibleModel[Root] {
+case class User(json: Json) extends ExtensibleModel[Root] with LazyLogging {
   def schema: Schema = Schema.User
-  lazy val root: Root = json.as[Root].toOption.getOrElse(Root.fallback)
+  lazy val root: Result[Root] = json.as[Root]
+  def rootOrDefault: Root = root.toOption.getOrElse(Root.fallback)
 
   def ++(other: Json): User = User(json.deepMerge(other))
 }

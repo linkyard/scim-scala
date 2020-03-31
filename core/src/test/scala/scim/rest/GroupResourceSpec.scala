@@ -50,7 +50,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         if (r.status == 200) {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
-          Group(r.body.value).root should be(Group.Root(id = Some("g1"), displayName = "Group 1",
+          Group(r.body.value).rootOrDefault should be(Group.Root(id = Some("g1"), displayName = "Group 1",
             members = Some(Seq(Member("u-1"), Member("u-2", display = Some("User 2"))))))
         } else {
           r.status should be(204)
@@ -58,7 +58,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         }
 
         store.content should have size 2
-        val members = store.content.find(_.id.contains("g1")).value.root.members.value
+        val members = store.content.find(_.id.contains("g1")).value.rootOrDefault.members.value
         members should have size 2
         members.exists(_.value == "u-1") should be(true)
         members.exists(_.value == "u-2") should be(true)
@@ -86,7 +86,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         if (r.status == 200) {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
-          Group(r.body.value).root should be(Group.Root(id = Some("g1"), displayName = "Group 1", members = Some(Seq(Member("u-1"),
+          Group(r.body.value).rootOrDefault should be(Group.Root(id = Some("g1"), displayName = "Group 1", members = Some(Seq(Member("u-1"),
             Member("u-2", display = Some("User 2")), Member("u-3", display = Some("User 3")), Member("u-4", display = Some("User 4"))))))
         } else {
           r.status should be(204)
@@ -94,7 +94,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         }
 
         store.content should have size 2
-        val members = store.content.find(_.id.contains("g1")).value.root.members.value
+        val members = store.content.find(_.id.contains("g1")).value.rootOrDefault.members.value
         members should have size 4
         members.exists(_.value == "u-1") should be(true)
         members.exists(_.value == "u-2") should be(true)
@@ -119,7 +119,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         if (r.status == 200) {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
-          Group(r.body.value).root should be(Group.Root(id = Some("g1"), displayName = "Group 1",
+          Group(r.body.value).rootOrDefault should be(Group.Root(id = Some("g1"), displayName = "Group 1",
             members = Some(Seq(Member("u-2"), Member("u-3")))))
         } else {
           r.status should be(204)
@@ -127,7 +127,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         }
 
         store.content should have size 2
-        val members = store.content.find(_.id.contains("g1")).value.root.members.value
+        val members = store.content.find(_.id.contains("g1")).value.rootOrDefault.members.value
         members should have size 2
         members.exists(_.value == "u-2") should be(true)
         members.exists(_.value == "u-3") should be(true)
@@ -151,7 +151,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         if (r.status == 200) {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
-          Group(r.body.value).root should be(Group.Root(id = Some("g1"), displayName = "Group 1",
+          Group(r.body.value).rootOrDefault should be(Group.Root(id = Some("g1"), displayName = "Group 1",
             members = Some(Seq(Member("u-2"), Member("u-3")))))
         } else {
           r.status should be(204)
@@ -159,7 +159,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         }
 
         store.content should have size 2
-        val members = store.content.find(_.id.contains("g1")).value.root.members.value
+        val members = store.content.find(_.id.contains("g1")).value.rootOrDefault.members.value
         members should have size 2
         members.exists(_.value == "u-2") should be(true)
         members.exists(_.value == "u-3") should be(true)
@@ -182,7 +182,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         if (r.status == 200) {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
-          Group(r.body.value).root should be(Group.Root(id = Some("g1"), displayName = "Group 1",
+          Group(r.body.value).rootOrDefault should be(Group.Root(id = Some("g1"), displayName = "Group 1",
             members = Some(Seq(Member("u-1")))))
         } else {
           r.status should be(204)
@@ -190,7 +190,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         }
 
         store.content should have size 2
-        val members = store.content.find(_.id.contains("g1")).value.root.members.value
+        val members = store.content.find(_.id.contains("g1")).value.rootOrDefault.members.value
         members should have size 1
         members.head.value should be("u-1")
       })

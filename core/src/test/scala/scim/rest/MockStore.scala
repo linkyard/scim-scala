@@ -56,26 +56,26 @@ trait MockStore[A <: ExtensibleModel[_]] {
 object MockStore {
   trait MockUserStore extends UserStore[Id] with MockStore[User] {
     override protected def schema = Schema.User
-    override protected def duplicate(a: User, b: User) = a.root.userName == b.root.userName
+    override protected def duplicate(a: User, b: User) = a.rootOrDefault.userName == b.rootOrDefault.userName
     override protected implicit def decoder: Decoder[User] = Codecs.userDecoder
   }
   trait MockGroupStore extends GroupStore[Id] with MockStore[Group] {
     override protected def schema = Schema.Group
-    override protected def duplicate(a: Group, b: Group) = a.root.displayName == b.root.displayName
+    override protected def duplicate(a: Group, b: Group) = a.rootOrDefault.displayName == b.rootOrDefault.displayName
     override protected implicit def decoder: Decoder[Group] = Codecs.groupDecoder
   }
   trait MockOptimizedGroupStore extends GroupStore[Id] with MockStore[Group] {
     var wasOptimized = false
     override protected def schema = Schema.Group
-    override protected def duplicate(a: Group, b: Group) = a.root.displayName == b.root.displayName
+    override protected def duplicate(a: Group, b: Group) = a.rootOrDefault.displayName == b.rootOrDefault.displayName
     override protected implicit def decoder: Decoder[Group] = Codecs.groupDecoder
 
     override def addToGroup(groupId: String, members: Set[Group.Member]) = Some {
       wasOptimized = true
       content.find(_.id.contains(groupId))
         .map { group =>
-          val ms = members ++ group.root.members.getOrElse(Seq.empty)
-          val g = Group(group.root.copy(members = Some(ms.toSeq)))
+          val ms = members ++ group.rootOrDefault.members.getOrElse(Seq.empty)
+          val g = Group(group.rootOrDefault.copy(members = Some(ms.toSeq)))
           content = content.filterNot(_.id.contains(groupId)) :+ g
           Right(())
         }.getOrElse(Left(DoesNotExist(groupId)))
@@ -86,8 +86,8 @@ object MockStore {
         wasOptimized = true
         Some(content.find(_.id.contains(groupId))
           .map { group =>
-            val ms = group.root.members.getOrElse(Seq.empty).filterNot(_.value == value)
-            val g = Group(group.root.copy(members = Some(ms.toSeq)))
+            val ms = group.rootOrDefault.members.getOrElse(Seq.empty).filterNot(_.value == value)
+            val g = Group(group.rootOrDefault.copy(members = Some(ms.toSeq)))
             content = content.filterNot(_.id.contains(groupId)) :+ g
             Right(())
           }.getOrElse(Left(DoesNotExist(groupId))))

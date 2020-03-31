@@ -1,6 +1,6 @@
 package scim.model
 
-import io.circe.Json
+import io.circe.{DecodingFailure, Json}
 
 trait Model
 
@@ -16,7 +16,8 @@ trait ExtensibleModel[Root] extends Model {
   def schema: Schema
 
   /** parsed representation */
-  def root: Root
+  def root: Either[DecodingFailure, Root]
+  def rootOrDefault: Root
 
   def asJson: Json = json
 }

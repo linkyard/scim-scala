@@ -16,14 +16,14 @@ class GroupSpec extends AnyFunSpec with Matchers with OptionValues {
     }
 
     it("should parse a the group json from the spec") {
-      val root = Group(Jsons.group).root
+      val root = Group(Jsons.group).rootOrDefault
       root.id.value should be("6c5bb468-14b2-4183-baf2-06d523e03bd3")
       root.displayName should be("Group B")
       root.members.value should have size(1)
     }
 
     it("should parse the members of the group json from the spec") {
-      val root = Group(Jsons.group).root
+      val root = Group(Jsons.group).rootOrDefault
       root.members.value should have size(1)
       val m0 = root.members.value.head
       m0.value should be("c3a26dd3-27a0-4dec-a2ac-ce211e105f97")

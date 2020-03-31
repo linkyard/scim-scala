@@ -1,13 +1,17 @@
 package scim.model
 
+import com.typesafe.scalalogging.LazyLogging
+import io.circe.Decoder.Result
 import io.circe.Json
-import io.circe.syntax._
 import io.circe.generic.auto._
+import io.circe.syntax._
 import scim.model.Group.Root
+import Codecs._
 
-case class Group(json: Json) extends ExtensibleModel[Root] {
+case class Group(json: Json) extends ExtensibleModel[Root] with LazyLogging {
   def schema: Schema = Schema.Group
-  lazy val root: Root = json.as[Root].toOption.getOrElse(Root.fallback)
+  lazy val root: Result[Root] = json.as[Root]
+  def rootOrDefault: Root = root.toOption.getOrElse(Root.fallback)
 
   def ++(other: Json): Group = Group(json.deepMerge(other))
 }
@@ -21,7 +25,7 @@ object Group {
     members: Option[Seq[Member]] = None,
   )
   object Root {
-    def fallback: Root = Root(id=None, displayName = "")
+    def fallback: Root = Root(id = None, displayName = "")
   }
   case class Member(
     value: String,

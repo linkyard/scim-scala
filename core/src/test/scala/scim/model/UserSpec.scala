@@ -18,20 +18,20 @@ class UserSpec extends AnyFunSpec with Matchers with OptionValues {
     }
 
     it("should parse 'userMinimal'") {
-      val root = User(Jsons.userMinimal).root
+      val root = User(Jsons.userMinimal).rootOrDefault
       root.userName should be("bjensen@example.com")
       root.id.value should be("2819c223-7f76-453a-919d-413861904646")
       root.name should be(None)
     }
     it("should parse 'userMinimalExternal'") {
-      val root = User(Jsons.userMinimalExternal).root
+      val root = User(Jsons.userMinimalExternal).rootOrDefault
       root.userName should be("bjensen@example.com")
       root.id should be(None)
       root.name should be(None)
     }
 
     it("should parse 'userFull'") {
-      val root = User(Jsons.userFull).root
+      val root = User(Jsons.userFull).rootOrDefault
       root.id.value should be("2819c223-7f76-453a-919d-413861904646")
       root.userName should be("bjensen@example.com")
       root.name.get.formatted.value should be("Ms. Barbara J Jensen, III")
@@ -44,7 +44,7 @@ class UserSpec extends AnyFunSpec with Matchers with OptionValues {
     }
 
     it("should parse enterprise attrs") {
-      val root = User(Jsons.userFull).root
+      val root = User(Jsons.userFull).rootOrDefault
       val enterprise = root.enterprise.value
       enterprise.employeeNumber.value should be("701984")
       enterprise.costCenter.value should be("4130")

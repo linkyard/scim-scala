@@ -247,7 +247,7 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
         val before = Jsons.group
 
         val r = patch.applyTo(Schema.Group)(before)
-        val after = Group(r.getOrElse(fail(r.toString))).root
+        val after = Group(r.getOrElse(fail(r.toString))).rootOrDefault
         after.id.value should be("6c5bb468-14b2-4183-baf2-06d523e03bd3")
         val ms = after.members.value
         ms should have size 2
@@ -285,7 +285,7 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
         val before = Jsons.userFull
 
         val r = patch.applyTo(Schema.Group)(before)
-        val after = User(r.getOrElse(fail(r.toString))).root
+        val after = User(r.getOrElse(fail(r.toString))).rootOrDefault
         after.addresses.value should have size 2
         val home = after.addresses.value.find(_.`type`.value == "home").value
         home.country.value should be("USA")
@@ -315,7 +315,7 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
         val before = Jsons.userFull
 
         val r = patch.applyTo(Schema.Group)(before)
-        val after = User(r.getOrElse(fail(r.toString))).root
+        val after = User(r.getOrElse(fail(r.toString))).rootOrDefault
         after.name.value.familyName.value should be("McDonald")
         after.name.value.givenName.value should be("Barbara")
       }
@@ -338,7 +338,7 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
         val before = Jsons.userFull
 
         val r = patch.applyTo(Schema.Group)(before)
-        val after = User(r.getOrElse(fail(r.toString))).root
+        val after = User(r.getOrElse(fail(r.toString))).rootOrDefault
         after.addresses.value should have size 2
         val home = after.addresses.value.find(_.`type`.value == "home").value
         home.streetAddress.value should be("456 Hollywood Blvd")
@@ -363,7 +363,7 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
         val before = Jsons.group
 
         val r = patch.applyTo(Schema.Group)(before)
-        val after = Group(r.getOrElse(fail(r.toString))).root
+        val after = Group(r.getOrElse(fail(r.toString))).rootOrDefault
         after.members should be(None)
       }
 
@@ -384,7 +384,7 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
         val before = Jsons.userFull
 
         val r = patch.applyTo(Schema.Group)(before)
-        val after = User(r.getOrElse(fail(r.toString))).root
+        val after = User(r.getOrElse(fail(r.toString))).rootOrDefault
         val as = after.addresses.value should have size 2
         val home = after.addresses.value.find(_.`type`.value == "home").value
         home.streetAddress.value should be("456 Hollywood Blvd")
@@ -411,7 +411,7 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
         val before = Jsons.group2
 
         val r = patch.applyTo(Schema.Group)(before)
-        val after = Group(r.getOrElse(fail(r.toString))).root
+        val after = Group(r.getOrElse(fail(r.toString))).rootOrDefault
         after.members.value should have size 1
         after.members.value.head.value should be("c3a26dd3-27a0-4dec-a2ac-ce211e105f97")
       }
@@ -432,7 +432,7 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
         val before = Jsons.userFull
 
         val r = patch.applyTo(Schema.Group)(before)
-        val after = User(r.getOrElse(fail(r.toString))).root
+        val after = User(r.getOrElse(fail(r.toString))).rootOrDefault
         val as = after.addresses.value should have size 2
         val home = after.addresses.value.find(_.`type`.value == "home").value
         home.streetAddress.value should be("456 Hollywood Blvd")
