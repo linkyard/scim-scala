@@ -38,8 +38,21 @@ object PatchOp {
             } else {
               addIt(ap.basePath(context.defaultSchema))(on, context.value)
             }
-          case Some(ap@AttributePath(_, _, Some(_))) =>
-            Left("adding a sub attribute is not supported")
+          case Some(ap@AttributePath(name, _, Some(subattr))) =>
+            val jsonPath = ap.basePath(context.defaultSchema)
+            if (jsonPath.json.isEmpty(on)) {
+              val v = Json.obj(subattr -> context.value)
+              on.asObject.map(_.add(name, v))
+                .map(Json.fromJsonObject)
+                .map(Right.apply)
+                .getOrElse(Left("entity must be on object"))
+            } else {
+              jsonPath.json.modifyF[Either[String, *]](_.asObject
+                .toRight("adding a sub attribute is only supported on complex values")
+                .map(o => o.add(subattr, context.value))
+                .map(Json.fromJsonObject)
+              )(on)
+            }
           case Some(FilteredAttributePath(_, _, _, _)) =>
             Left("add with filter is not supported")
         }

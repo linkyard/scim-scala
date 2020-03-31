@@ -180,6 +180,45 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
         patch.applyTo(Schema.User)(before) should be(Right(after))
       }
 
+      it("should add new sub attribute") {
+        val patch = patchOp(
+          """
+            |   {
+            |     "schemas":
+            |       ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+            |     "Operations":[{
+            |      "op": "Add",
+            |      "path": "name.givenName",
+            |      "value": "Barbara"
+            |     }]
+            |   }
+            |""".stripMargin)
+
+        val before = Jsons.userMinimal
+
+        val after = parseJson(
+          """
+            |{
+            |  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+            |  "id": "2819c223-7f76-453a-919d-413861904646",
+            |  "userName": "bjensen@example.com",
+            |  "meta": {
+            |    "resourceType": "User",
+            |    "created": "2010-01-23T04:56:22Z",
+            |    "lastModified": "2011-05-13T04:42:34Z",
+            |    "version": "W\/\"3694e05e9dff590\"",
+            |    "location":
+            |     "https://example.com/v2/Users/2819c223-7f76-453a-919d-413861904646"
+            |  },
+            |  "name": {
+            |    "givenName": "Barbara"
+            |  }
+            |}
+            |""".stripMargin)
+
+        patch.applyTo(Schema.User)(before) should be(Right(after))
+      }
+
       it("should replace members of a group (array content)") {
         val patch = patchOp(
           """
