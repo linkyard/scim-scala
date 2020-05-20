@@ -4,11 +4,15 @@ import io.circe.{DecodingFailure, Json}
 
 trait Model
 
+trait JsonModel extends Model {
+  def asJson: Json
+}
+
 trait RootModel extends Model {
   def schemas: Seq[Schema]
 }
 
-trait ExtensibleModel[Root] extends Model {
+trait ExtensibleModel[Root] extends Model with JsonModel {
   /** full/canonical representation */
   val json: Json
 

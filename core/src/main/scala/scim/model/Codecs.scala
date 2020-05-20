@@ -7,6 +7,7 @@ import io.circe.generic.semiauto._
 import io.circe.{Codec, Decoder, Encoder}
 import scim.model.Filter.AttributeSelector
 import scim.model.PatchOp.OperationType
+import scim.model.ResourceType.SchemaExtension
 import scim.model.ServiceProviderConfiguration.{AuthenticationOptions, BulkOptions, FilterOptions, OptionSupported}
 
 object Codecs {
@@ -55,4 +56,7 @@ object Codecs {
   implicit val groupDecoder: Decoder[Group] = Decoder.decodeJson.map(Group.apply)
   implicit val groupEncoder: Encoder[Group] = _.asJson
   implicit val groupMemberCodec: Codec[Group.Member] = deriveCodec
+
+  implicit val schemaTypeExtension: Codec[SchemaExtension] = deriveCodec
+  implicit val resourceTypeCode: Codec[ResourceType] = deriveCodec
 }

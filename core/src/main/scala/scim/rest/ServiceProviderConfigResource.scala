@@ -11,6 +11,7 @@ private class ServiceProviderConfigResource[F[_]](config: ServiceProviderConfigu
   private def pure[A]: A => F[A] = applicative.pure
 
   def get(subPath: Path, queryParams: QueryParams): F[Response] = pure(Response.ok(config.asJson))
+
   def post(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = pure(Response.notImplemented)
   def put(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = pure(Response.notImplemented)
   def patch(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = pure(Response.notImplemented)

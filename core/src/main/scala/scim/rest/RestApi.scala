@@ -1,22 +1,28 @@
 package scim.rest
 
 import cats.Monad
-import scim.model.ServiceProviderConfiguration
+import scim.model.{ResourceType, ServiceProviderConfiguration}
 import scim.model.ServiceProviderConfiguration.{AuthenticationOptions, BulkOptions, FilterOptions, OptionSupported}
 import scim.spi.{GroupStore, UserStore}
 
-class RestApi[F[_]] private(config: ServiceProviderConfiguration, urlConfig: UrlConfig)(implicit monad: Monad[F], userStore: UserStore[F],
-  groupStore: GroupStore[F]) {
+class RestApi[F[_]] private(
+  config: ServiceProviderConfiguration,
+  urlConfig: UrlConfig,
+  resourceTypes: Iterable[ResourceType])(implicit monad: Monad[F], userStore: UserStore[F], groupStore: GroupStore[F]) {
   def user: Resource[F] = new UserResource[F](urlConfig)
   def group: Resource[F] = new GroupResource[F](urlConfig)
+  def resourceTypes: Resource[F] = new ResourceTypeResource[F](urlConfig, resourceTypes)
   def serviceProviderConfig: Resource[F] = new ServiceProviderConfigResource[F](config)
   def me: Resource[F] = new NotImplementedResource[F]
   def default: Resource[F] = new NotFoundResource[F]
 }
 
 object RestApi {
-  def apply[F[_] : Monad : UserStore : GroupStore](urlConfig: UrlConfig, config: ServiceProviderConfiguration = defaultConfig): RestApi[F] = {
-    new RestApi[F](config, urlConfig)
+  def apply[F[_] : Monad : UserStore : GroupStore](
+    urlConfig: UrlConfig,
+    config: ServiceProviderConfiguration = defaultConfig,
+    resourceTypes: Iterable[ResourceType] = defaultResourceTypes): RestApi[F] = {
+    new RestApi[F](config, urlConfig, resourceTypes)
   }
 
   val defaultConfig = new ServiceProviderConfiguration(
@@ -32,4 +38,6 @@ object RestApi {
       description = "Bearer Token authentication in HTTP Authorization header",
     ))
   )
+
+  val defaultResourceTypes: Iterable[ResourceType] = Seq(ResourceType.UserResourceType, ResourceType.GroupResourceType)
 }

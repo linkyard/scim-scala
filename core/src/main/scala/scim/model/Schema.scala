@@ -22,5 +22,6 @@ object Schema {
   val SearchRequest: Schema = Schema("urn:ietf:params:scim:api:messages:2.0:SearchRequest")
   val ListResponse: Schema = Schema("urn:ietf:params:scim:api:messages:2.0:ListResponse")
   val PatchOp: Schema = Schema("urn:ietf:params:scim:api:messages:2.0:PatchOp")
+  val ResourceType: Schema = Schema("urn:ietf:params:scim:schemas:core:2.0:ResourceType")
   val Error: Schema = Schema("urn:ietf:params:scim:api:messages:2.0:Error")
 }

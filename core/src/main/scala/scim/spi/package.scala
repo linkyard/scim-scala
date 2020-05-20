@@ -1,7 +1,7 @@
 package scim
 
-import io.circe.{Json, JsonNumber}
-import scim.model.{ExtensibleModel, SortOrder}
+import io.circe.Json
+import scim.model.{JsonModel, SortOrder}
 
 package object spi {
 
@@ -28,7 +28,7 @@ package object spi {
   case class Sorting(byField: String, order: SortOrder) {
     /** Sorts the sequence according to the order defined by this sorting.
      * Attention: use database-based sorts to avoid loading all results. */
-    def applyTo[A <: ExtensibleModel[_]](results: Seq[A]): Seq[A] = {
+    def applyTo[A <: JsonModel](results: Seq[A]): Seq[A] = {
       val sorted = results.sortBy(_.asJson.hcursor.downField(byField).focus)
       if (order == SortOrder.Descending) sorted.reverse
       else sorted

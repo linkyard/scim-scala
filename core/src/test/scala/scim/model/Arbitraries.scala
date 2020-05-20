@@ -6,6 +6,7 @@ import io.circe.testing.ArbitraryInstances
 import org.scalacheck.{Arbitrary, Gen, ScalacheckShapeless}
 import scim.model.Filter.Comparison._
 import scim.model.Filter._
+import scim.model.ResourceType.SchemaExtension
 
 object Arbitraries {
   implicit val json: Arbitrary[Json] = new ArbitraryInstances {}.arbitraryJson
@@ -111,4 +112,21 @@ object Arbitraries {
   } yield (PatchOp.Operation(op, path, Some(value).filterNot(_.isNull))))
 
   implicit def patchOp: Arbitrary[PatchOp] = Arbitrary(Gen.nonEmptyListOf(patchOpOperation.arbitrary).map(ops => PatchOp(ops)))
+
+  implicit def schemaExtension: Arbitrary[SchemaExtension] = Arbitrary(for {
+    schema <- schema.arbitrary
+    required <- Arbitrary.arbBool.arbitrary
+  } yield SchemaExtension(schema, required))
+
+  implicit def resourceType: Arbitrary[ResourceType] = Arbitrary(
+    for {
+      id <- attributeName.arbitrary
+      externalId <- Gen.oneOf(None, Some(id))
+      name <- attributeName.arbitrary
+      description <- attributeName.arbitrary
+      schemaExtensions <- Gen.listOf(schemaExtension.arbitrary)
+    } yield ResourceType(
+      id = id, externalId = externalId, name = name, description = description,
+      endpoint = s"/$id", schemaExtensions = schemaExtensions
+    ))
 }
