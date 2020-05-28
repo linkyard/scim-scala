@@ -121,12 +121,11 @@ object Arbitraries {
   implicit def resourceType: Arbitrary[ResourceType] = Arbitrary(
     for {
       id <- attributeName.arbitrary
-      externalId <- Gen.oneOf(None, Some(id))
       name <- attributeName.arbitrary
       description <- attributeName.arbitrary
       schemaExtensions <- Gen.listOf(schemaExtension.arbitrary)
     } yield ResourceType(
-      id = id, externalId = externalId, name = name, description = description,
-      endpoint = s"/$id", schemaExtensions = schemaExtensions
+      id = id, name = name, description = description,
+      endpoint = s"/$id", schemaExtensions = Some(schemaExtensions).filter(_.nonEmpty)
     ))
 }
