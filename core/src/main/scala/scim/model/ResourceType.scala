@@ -10,7 +10,7 @@ case class ResourceType(
   description: String,
   endpoint: String,
   schema: Schema = Schema.ResourceType,
-  schemaExtensions: Option[Seq[SchemaExtension]] = None,
+  schemaExtensions: Seq[SchemaExtension] = Nil,
   schemas: Seq[Schema] = List(Schema.ResourceType),
 ) extends RootModel with JsonModel {
   def asJson: Json = Codecs.resourceTypeCode(this)
