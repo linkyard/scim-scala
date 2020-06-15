@@ -16,6 +16,7 @@ object Schema {
   def default: Schema = None
   val None: Schema = Schema("urn:ietf:params:scim:schemas:core:2.0:NonExisting")
 
+  val SchemaItself: Schema = Schema("urn:ietf:params:scim:schemas:core:2.0:Schema")
   val ServiceProviderConfiguration: Schema = Schema("urn:ietf:params:scim:api:messages:2.0:ServiceProviderConfiguration")
   val User: Schema = Schema("urn:ietf:params:scim:schemas:core:2.0:User")
   val Group: Schema = Schema("urn:ietf:params:scim:schemas:core:2.0:Group")

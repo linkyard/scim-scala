@@ -50,7 +50,7 @@ lazy val core = (project in file("core"))
       "io.circe" %% "circe-generic" % Dependencies.circe,
       "io.circe" %% "circe-optics" % Dependencies.circe,
       "com.lihaoyi" %% "fastparse" % Dependencies.fastParse,
-      "io.circe" %% "circe-parser" % Dependencies.circe % Test,
+      "io.circe" %% "circe-parser" % Dependencies.circe,
       "io.circe" %% "circe-testing" % Dependencies.circe % Test,
     ),
     libraryDependencies ++= Dependencies.logBinding,

@@ -126,6 +126,6 @@ object Arbitraries {
       schemaExtensions <- Gen.listOf(schemaExtension.arbitrary)
     } yield ResourceType(
       id = id, name = name, description = description,
-      endpoint = s"/$id", schemaExtensions = Some(schemaExtensions).filter(_.nonEmpty)
+      endpoint = s"/$id", schemaExtensions = schemaExtensions
     ))
 }
