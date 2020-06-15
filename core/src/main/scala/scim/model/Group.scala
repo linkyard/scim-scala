@@ -30,7 +30,7 @@ object Group {
 
   def groupMeta(id: String, created: Option[Instant] = None, lastModified: Option[Instant] = None, version: Option[String] = None): Meta = {
     val name = URLEncoder.encode(id, "UTF-8")
-    Meta("Group", locationRelative = Some(s"/Groups/$name"), lastModified = lastModified, version = version)
+    Meta("Group", locationRelative = Some(s"/Groups/$name"), created = created, lastModified = lastModified, version = version)
   }
 
   case class Root(

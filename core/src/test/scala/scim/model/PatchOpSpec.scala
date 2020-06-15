@@ -14,7 +14,7 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
     it("should serialize/parse to same Json")(check { patch: PatchOp =>
       val json = patch.asJson
       val r = json.as[PatchOp]
-      val reparsed = r.getOrElse(fail(s"could not parse: ${r}"))
+      val reparsed = r.getOrElse(fail(s"could not parse: $r"))
       reparsed == patch
     })
 
@@ -251,7 +251,7 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
         after.id.value should be("6c5bb468-14b2-4183-baf2-06d523e03bd3")
         val ms = after.members.value
         ms should have size 2
-        val m0 = ms.head;
+        val m0 = ms.head
         val m1 = ms.drop(1).head
         m0.value should be("2819c223...413861904646")
         m0.display.value should be("Babs Jensen")
@@ -385,7 +385,7 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
 
         val r = patch.applyTo(Schema.Group)(before)
         val after = User(r.getOrElse(fail(r.toString))).rootOrDefault
-        val as = after.addresses.value should have size 2
+        after.addresses.value should have size 2
         val home = after.addresses.value.find(_.`type`.value == "home").value
         home.streetAddress.value should be("456 Hollywood Blvd")
         home.region should be(None)
@@ -433,7 +433,7 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
 
         val r = patch.applyTo(Schema.Group)(before)
         val after = User(r.getOrElse(fail(r.toString))).rootOrDefault
-        val as = after.addresses.value should have size 2
+        after.addresses.value should have size 2
         val home = after.addresses.value.find(_.`type`.value == "home").value
         home.streetAddress.value should be("456 Hollywood Blvd")
         home.region should be(None)

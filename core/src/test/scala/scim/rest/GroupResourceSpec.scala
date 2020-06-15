@@ -34,7 +34,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
       meta = Some(Group.groupMeta("g-a").resolveLocation(base))))
     val group2 = Group(Jsons.group2)
 
-    def tests(withIt: (Boolean => ((GroupResource[Id], MockStore[Group]) => Unit) => Unit)): Unit = {
+    def tests(withIt: Boolean => ((GroupResource[Id], MockStore[Group]) => Unit) => Unit): Unit = {
       it("should update if patched with single adds on member")(withIt(true) { (rest, store) =>
         store.content = Seq(group1, group2)
         val r = rest.patch(Seq("g1"), Map.empty,

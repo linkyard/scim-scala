@@ -33,7 +33,7 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
   }
 
   override def patch(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
-    Helpers.Patch.patchViaJson(subPath, body, urlConfig.base)(store.get, store.update, Schema.User)
+    Helpers.Patch.patchViaJson(subPath, body, urlConfig.base)(store.get, store.update)
       .getOrElse(pure(Response.notImplemented))
   }
 }

@@ -18,7 +18,7 @@ case class ResourceType(
 ) extends RootModel with JsonModel {
   def asJson(base: URI): Json = Codecs.resourceTypeCode(this)
     .deepMerge(Json.obj("meta" -> meta.resolveLocation(base).asJson))
-  override def meta: Meta = Meta("ResourceType", locationRelative = Some(s"/ResourceType/${id}"))
+  override def meta: Meta = Meta("ResourceType", locationRelative = Some(s"/ResourceType/$id"))
 }
 
 object ResourceType {

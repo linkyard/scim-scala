@@ -5,7 +5,7 @@ import io.circe.Json
 import scim.model.{Meta, SchemaDefinition}
 import scim.rest.Resource.{Path, QueryParams}
 
-case class SchemasResource[F[_]](urlConfig: UrlConfig, schemas: Iterable[SchemaDefinition])(implicit applicative: Applicative[F]) extends Resource[F] {
+class SchemasResource[F[_]](urlConfig: UrlConfig, schemas: Iterable[SchemaDefinition])(implicit applicative: Applicative[F]) extends Resource[F] {
   private def pure[A]: A => F[A] = applicative.pure
 
   def get(subPath: Path, queryParams: QueryParams): F[Response] = {

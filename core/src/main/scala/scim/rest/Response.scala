@@ -11,8 +11,6 @@ case class Response(status: Int, body: Option[Json] = None, locationHeader: Opti
 object Response {
   def apply(status: Int, body: Json): Response = Response(status, Some(body))
 
-  private val defaultHeaders = Map("Content-Type" -> "application/scim+json")
-
   def ok: Response = Response(200, None)
   def ok(body: JsonModel, base: URI): Response = okJson(body.asJson(base), locationHeader = body.meta.resolveLocation(base).location)
   def okJson(body: Json, locationHeader: Option[URI] = None): Response = {

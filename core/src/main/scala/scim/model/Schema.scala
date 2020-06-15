@@ -11,7 +11,7 @@ case class Schema(uri: URI) {
 object Schema {
   def apply(uri: String): Schema = Schema(URI.create(uri))
   def parse(uri: String): Either[String, Schema] = Try(URI.create(uri)).toEither
-    .map(Schema.apply).left.map(_ => s"${uri} is not a valid schema")
+    .map(Schema.apply).left.map(_ => s"$uri is not a valid schema")
 
   def default: Schema = None
   val None: Schema = Schema("urn:ietf:params:scim:schemas:core:2.0:NonExisting")

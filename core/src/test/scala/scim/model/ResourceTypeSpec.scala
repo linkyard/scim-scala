@@ -15,7 +15,7 @@ class ResourceTypeSpec extends AnyFunSpec with Checkers with Matchers with Optio
     it("should serialize/parse to same Json")(check { rt: ResourceType =>
       val json = rt.asJson(URI.create("urn:none"))
       val r = json.as[ResourceType]
-      val reparsed = r.getOrElse(fail(s"could not parse: ${r}"))
+      val reparsed = r.getOrElse(fail(s"could not parse: $r"))
       reparsed == rt
     })
   }

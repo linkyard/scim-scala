@@ -88,7 +88,7 @@ object MockStore {
         Some(content.find(_.id.contains(groupId))
           .map { group =>
             val ms = group.rootOrDefault.members.getOrElse(Seq.empty).filterNot(_.value == value)
-            val g = Group(group.rootOrDefault.copy(members = Some(ms.toSeq)))
+            val g = Group(group.rootOrDefault.copy(members = Some(ms)))
             content = content.filterNot(_.id.contains(groupId)) :+ g
             Right(())
           }.getOrElse(Left(DoesNotExist(groupId))))

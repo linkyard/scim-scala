@@ -3,7 +3,7 @@ package scim.model
 import io.circe.{Json, parser}
 
 object Jsons {
-  private def parse(string: String): Json = parser.parse(string).getOrElse(throw new AssertionError(("parsing failed")))
+  private def parse(string: String): Json = parser.parse(string).getOrElse(throw new AssertionError("parsing failed"))
 
   def ignoreMeta(json: Json): Json = json.mapObject(_.remove("meta"))
 

@@ -14,13 +14,13 @@ class FilterSpec extends AnyFunSpec with Checkers with Matchers {
   private def parseFilter(value: String): Filter = {
     Filter.parse(value) match {
       case Right(result) => result
-      case Left(error) => fail(s"parsing of '$value' failed: ${error}")
+      case Left(error) => fail(s"parsing of '$value' failed: $error")
     }
   }
   private def parseAS(value: String): AttributeSelector = {
     Filter.parseAttributeSelector(value) match {
       case Right(result) => result
-      case Left(error) => fail(s"parsing of '$value' failed: ${error}")
+      case Left(error) => fail(s"parsing of '$value' failed: $error")
     }
   }
 

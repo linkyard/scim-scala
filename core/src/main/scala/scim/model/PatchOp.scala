@@ -100,7 +100,7 @@ object PatchOp {
       }
 
       private def removeFiltered(jsonPath: JsonPath, filter: Json => Boolean)(on: Json): Either[String, Json] = {
-        jsonPath.json.modifyF[Either[String, ?]](_.fold(
+        jsonPath.json.modifyF[Either[String, *]](_.fold(
           jsonNull = Right(Json.Null),
           jsonBoolean = _ => Left("filtered removal on boolean type is illegal"),
           jsonNumber = _ => Left("filtered removal on number type is illegal"),
@@ -117,7 +117,7 @@ object PatchOp {
           jsonNumber = _ => Left("expected complex object but was number"),
           jsonString = _ => Left("expected complex object but was string"),
           jsonObject = obj => Right(Json.fromJsonObject(obj.remove(sub))),
-          jsonArray = arr => arr.traverse[Either[String, ?], Json] { el =>
+          jsonArray = arr => arr.traverse[Either[String, *], Json] { el =>
             if (filter(el)) el.asObject.map(_.remove(sub)).map(Json.fromJsonObject).toRight("expected complex object")
             else Right(el)
           }.map(Json.fromValues)
@@ -130,9 +130,9 @@ object PatchOp {
         context.path match {
           case None =>
             Right(root.json.modify(_ => context.value)(on))
-          case Some(ap@AttributePath(name, _, None)) =>
+          case Some(ap@AttributePath(_, _, None)) =>
             Right(ap.basePath(context.defaultSchema).json.modify(_ => context.value)(on))
-          case Some(ap@AttributePath(name, _, Some(sub))) =>
+          case Some(ap@AttributePath(_, _, Some(sub))) =>
             replaceOnSub(ap.basePath(context.defaultSchema), sub)(on, context.value)
           case Some(ap@FilteredAttributePath(_, filter, _, None)) =>
             replaceOnBaseWithFilter(ap.basePath(context.defaultSchema), filter)(on, context.value)

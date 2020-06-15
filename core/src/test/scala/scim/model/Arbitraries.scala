@@ -61,7 +61,7 @@ object Arbitraries {
     a <- aSimpleFilter.arbitrary
     b <- aSimpleFilter.arbitrary
     op <- Gen.oneOf(Seq(And.apply _, Or.apply _))
-  } yield And(a, b))
+  } yield op(a, b))
 
   implicit def complexAttributeFilter: Arbitrary[ComplexAttributeFilter] = Arbitrary(for {
     path <- attributePath.arbitrary
@@ -80,7 +80,7 @@ object Arbitraries {
       a <- comparison.arbitrary
       b <- comparison.arbitrary
       op <- Gen.oneOf(Seq(And.apply _, Or.apply _))
-    } yield And(a, b))
+    } yield op(a, b))
 
     Arbitrary(Gen.frequency(
       (1, log.arbitrary),
@@ -109,7 +109,7 @@ object Arbitraries {
       10 -> filteredAttributePath.arbitrary.map(Some(_)),
     )
     value <- json.arbitrary
-  } yield (PatchOp.Operation(op, path, Some(value).filterNot(_.isNull))))
+  } yield PatchOp.Operation(op, path, Some(value).filterNot(_.isNull)))
 
   implicit def patchOp: Arbitrary[PatchOp] = Arbitrary(Gen.nonEmptyListOf(patchOpOperation.arbitrary).map(ops => PatchOp(ops)))
 

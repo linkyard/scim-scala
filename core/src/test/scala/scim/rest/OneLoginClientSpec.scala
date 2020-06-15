@@ -54,7 +54,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       val lr = r.body.value.as[ListResponse].value
       lr.totalResults should be(2)
       val res = lr.Resources.value
-      res should have size (2)
+      res should have size 2
       val g1 = res.head.as[Group].value
       g1.rootOrDefault.displayName should be("Group A")
       g1.id.value should be("g-a")
@@ -170,7 +170,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       val r = api.user.put(Seq("a-id-1"), Map.empty, body = user1b.asJson(base))
       r.status should be(200)
       r.body.value.as[User].value should be(user1b)
-      Users.content should have size (2)
+      Users.content should have size 2
       Users.content.find(_.id == user1.id).value.rootOrDefault.displayName.value should be("Mülli")
     }
 
@@ -277,9 +277,9 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       r2.status should be(200)
       User(r2.body.value).rootOrDefault.active should be(Some(false))
 
-      Users.content should have size (1)
+      Users.content should have size 1
       Users.content.head should be(User(r2.body.value))
-      Groups.content should have size (1)
+      Groups.content should have size 1
       Groups.content.head.rootOrDefault.members should be(Some(Seq(Group.Member(user2.id.get))))
     }
 
@@ -301,8 +301,8 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       val r2 = api.user.delete(Seq(user1.id.get), Map.empty)
       r2.status should be(204)
 
-      Users.content should have size (0)
-      Groups.content should have size (1)
+      Users.content should have size 0
+      Groups.content should have size 1
       Groups.content.head.rootOrDefault.members.getOrElse(Nil) should have size 0
     }
 
@@ -327,7 +327,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       }
 
       val r = getThem()
-      r should have size (count)
+      r should have size count
       (1 to count).foreach { i =>
         r(i - 1).rootOrDefault.userName should be(s"user-$i")
       }

@@ -120,7 +120,7 @@ private object Helpers {
   object Patch {
     /** gets the current state, patches that and updates all fields */
     def patchViaJson[F[_] : Monad, E, A <: ExtensibleModel[_] : Decoder](subPath: Path, body: Json, base: URI)(
-      retrieve: Id => F[Either[DoesNotExist, A]], update: A => F[Either[UpdateError, A]], schema: Schema): Option[F[Response]] = {
+      retrieve: Id => F[Either[DoesNotExist, A]], update: A => F[Either[UpdateError, A]]): Option[F[Response]] = {
       subpathToId(subPath).map { id =>
         decodeBody[PatchOp](body)
           .map { op =>

@@ -31,7 +31,7 @@ object User {
 
   def userMeta(id: String, created: Option[Instant] = None, lastModified: Option[Instant] = None, version: Option[String] = None): Meta = {
     val name = URLEncoder.encode(id, "UTF-8")
-    Meta("User", locationRelative = Some(s"/Users/$name"), lastModified = lastModified, version = version)
+    Meta("User", locationRelative = Some(s"/Users/$name"), created = created, lastModified = lastModified, version = version)
   }
 
   case class Root(

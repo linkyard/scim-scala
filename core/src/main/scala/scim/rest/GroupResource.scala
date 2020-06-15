@@ -35,7 +35,7 @@ private class GroupResource[F[_]](urlConfig: UrlConfig)(implicit store: GroupSto
 
   override def patch(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
     Helpers.Patch.patchArrayAttribute[F, Member](subPath, body, urlConfig.group)("members", store.addToGroup, store.removeFromGroup)
-      .orElse(Helpers.Patch.patchViaJson(subPath, body, urlConfig.base)(store.get, store.update, Schema.User))
+      .orElse(Helpers.Patch.patchViaJson(subPath, body, urlConfig.base)(store.get, store.update))
       .getOrElse(pure(Response.notImplemented))
   }
 }

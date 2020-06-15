@@ -16,7 +16,7 @@ class ServiceProviderConfigurationSpec extends AnyFunSpec with Checkers with Mat
     it("should serialize/parse to same Json")(check { config: ServiceProviderConfiguration =>
       val json = config.asJson(URI.create("urn:none"))
       val r = json.as[ServiceProviderConfiguration]
-      val reparsed = r.getOrElse(fail(s"could not parse: ${r}"))
+      val reparsed = r.getOrElse(fail(s"could not parse: $r"))
       reparsed == config
     })
   }

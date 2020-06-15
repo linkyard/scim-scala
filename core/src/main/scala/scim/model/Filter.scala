@@ -149,8 +149,6 @@ object Filter {
   case class FilteredAttributePath(name: String, filter: AFilter, schema: Option[Schema] = None, subAttribute: Option[String] = None)
     extends AttributeSelector {
 
-    def modify(on: Json, defaultSchema: Schema)(f: Json => Either[String, Json]): Either[String, Json] = ???
-
     def render: String = schema.map(_.asString + ":").getOrElse("") + name + s"[${filter.render}]" + subAttribute.map("." + _).getOrElse("")
   }
 
@@ -218,7 +216,7 @@ object Filter {
       if (string.trim.isEmpty) Right(NoFilter)
       else {
         fastparse.parse(string, completeFilter(_), verboseFailures = true) match {
-          case Parsed.Success(value, index) => Right(value)
+          case Parsed.Success(value, _) => Right(value)
           case failure: Parsed.Failure => Left(failure.longMsg)
         }
       }
@@ -226,7 +224,7 @@ object Filter {
 
     def parseAttributeSelector(string: String): Either[String, AttributeSelector] = {
       fastparse.parse(string, attributeSelector(_), verboseFailures = true) match {
-        case Parsed.Success(value, index) => Right(value)
+        case Parsed.Success(value, _) => Right(value)
         case failure: Parsed.Failure => Left(failure.longMsg)
       }
     }
@@ -316,12 +314,12 @@ object Filter {
     def attrExpPresent[_: P]: P[Comparison] = P(attrPath ~ space ~ IgnoreCase("pr")).map(attrPath => Comparison.Present(attrPath))
     def attrExpCompare[_: P]: P[Comparison] = (attrPath ~ space ~ compareOp ~ space ~ compValue).map { case (path, op, value) => op(path, value) }
     def attrExp[_: P]: P[Comparison] = P(attrExpPresent | attrExpCompare)
-    def parensExp[_: P]: P[AFilter] = P(((IgnoreCase("not") ~ space).!.? ~ "(" ~/ filter ~ ")")).map {
+    def parensExp[_: P]: P[AFilter] = P((IgnoreCase("not") ~ space).!.? ~ "(" ~/ filter ~ ")").map {
       case (Some(_), filter) => Not(filter)
       case (None, filter) => filter
     }
     def valuePath[_: P]: P[ComplexAttributeFilter] = P(attrPath ~ "[" ~/ valFilter ~ "]").map { case (path, filter) => ComplexAttributeFilter(path, filter) }
-    def logicalOperator[_: P]: P[(AFilter, AFilter) => LogicalOperation] = (P(IgnoreCase("and")).map(_ => And) | P(IgnoreCase("or")).map(_ => Or))
+    def logicalOperator[_: P]: P[(AFilter, AFilter) => LogicalOperation] = P(IgnoreCase("and")).map(_ => And) | P(IgnoreCase("or")).map(_ => Or)
 
     def valFilter[_: P]: P[AFilter] = P((parensExp | attrExp) ~ (space ~ logicalOperator ~ space ~ valFilter).?).map {
       case (a, None) => a
