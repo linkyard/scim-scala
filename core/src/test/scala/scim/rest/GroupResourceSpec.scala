@@ -1,5 +1,6 @@
 package scim.rest
 
+import java.net.URI
 import cats.Id
 import io.circe.parser.parse
 import org.scalatest.funspec.AnyFunSpec
@@ -24,9 +25,13 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
   }
 
   describe("Group Resource") {
-    val group1 = Group(Group.Root(id = Some("g1"), displayName = "Group 1", members = Some(Seq(Member("u-1")))))
+    val base = URI.create("https://host.local")
+
+    val group1 = Group(Group.Root(id = Some("g1"), displayName = "Group 1", members = Some(Seq(Member("u-1"))),
+      meta = Some(Group.groupMeta("g-a").resolveLocation(base))))
     val group1b = Group(Group.Root(id = Some("g1"), displayName = "Group 1", members = Some(
-      Seq(Member("u-1"), Member("u-2"), Member("u-3")))))
+      Seq(Member("u-1"), Member("u-2"), Member("u-3"))),
+      meta = Some(Group.groupMeta("g-a").resolveLocation(base))))
     val group2 = Group(Jsons.group2)
 
     def tests(withIt: (Boolean => ((GroupResource[Id], MockStore[Group]) => Unit) => Unit)): Unit = {
@@ -50,7 +55,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         if (r.status == 200) {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
-          Group(r.body.value).rootOrDefault should be(Group.Root(id = Some("g1"), displayName = "Group 1",
+          Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(id = Some("g1"), displayName = "Group 1",
             members = Some(Seq(Member("u-1"), Member("u-2", display = Some("User 2"))))))
         } else {
           r.status should be(204)
@@ -86,7 +91,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         if (r.status == 200) {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
-          Group(r.body.value).rootOrDefault should be(Group.Root(id = Some("g1"), displayName = "Group 1", members = Some(Seq(Member("u-1"),
+          Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(id = Some("g1"), displayName = "Group 1", members = Some(Seq(Member("u-1"),
             Member("u-2", display = Some("User 2")), Member("u-3", display = Some("User 3")), Member("u-4", display = Some("User 4"))))))
         } else {
           r.status should be(204)
@@ -119,7 +124,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         if (r.status == 200) {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
-          Group(r.body.value).rootOrDefault should be(Group.Root(id = Some("g1"), displayName = "Group 1",
+          Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(id = Some("g1"), displayName = "Group 1",
             members = Some(Seq(Member("u-2"), Member("u-3")))))
         } else {
           r.status should be(204)
@@ -151,7 +156,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         if (r.status == 200) {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
-          Group(r.body.value).rootOrDefault should be(Group.Root(id = Some("g1"), displayName = "Group 1",
+          Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(id = Some("g1"), displayName = "Group 1",
             members = Some(Seq(Member("u-2"), Member("u-3")))))
         } else {
           r.status should be(204)
@@ -182,7 +187,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         if (r.status == 200) {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
-          Group(r.body.value).rootOrDefault should be(Group.Root(id = Some("g1"), displayName = "Group 1",
+          Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(id = Some("g1"), displayName = "Group 1",
             members = Some(Seq(Member("u-1")))))
         } else {
           r.status should be(204)

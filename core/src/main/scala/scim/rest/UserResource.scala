@@ -11,19 +11,19 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
   private def pure[A]: A => F[A] = monad.pure
 
   override def get(subPath: Path, queryParams: QueryParams): F[Response] = {
-    Helpers.Get.retrieve(subPath, urlConfig.user)(store.get)
-      .orElse(Helpers.Get.search(subPath, queryParams)(store.search))
+    Helpers.Get.retrieve(subPath, urlConfig.base)(store.get)
+      .orElse(Helpers.Get.search(subPath, queryParams, urlConfig.base)(store.search))
       .getOrElse(pure(Response.notImplemented))
   }
 
   override def post(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
-    Helpers.Post.create(subPath, body, urlConfig.user)(store.create)
-      .orElse(Helpers.Post.search(subPath, body)(store.search))
+    Helpers.Post.create(subPath, body, urlConfig.base)(store.create)
+      .orElse(Helpers.Post.search(subPath, body, urlConfig.base)(store.search))
       .getOrElse(pure(Response.notImplemented))
   }
 
   override def put(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
-    Helpers.Put.update(subPath, body, urlConfig.user)(store.update)
+    Helpers.Put.update(subPath, body, urlConfig.base)(store.update)
       .getOrElse(pure(Response.notImplemented))
   }
 
@@ -33,7 +33,7 @@ private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore
   }
 
   override def patch(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
-    Helpers.Patch.patchViaJson(subPath, body, urlConfig.user)(store.get, store.update, Schema.User)
+    Helpers.Patch.patchViaJson(subPath, body, urlConfig.base)(store.get, store.update, Schema.User)
       .getOrElse(pure(Response.notImplemented))
   }
 }

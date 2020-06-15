@@ -14,8 +14,8 @@ class RestApi[F[_]] private(
   def user: Resource[F] = new UserResource[F](urlConfig)
   def group: Resource[F] = new GroupResource[F](urlConfig)
   def resourceTypes: Resource[F] = new ResourceTypeResource[F](urlConfig, resourceTypes)
-  def schemas: Resource[F] = new SchemasResource(schemaDefinitions)
-  def serviceProviderConfig: Resource[F] = new ServiceProviderConfigResource[F](config)
+  def schemas: Resource[F] = new SchemasResource(urlConfig, schemaDefinitions)
+  def serviceProviderConfig: Resource[F] = new ServiceProviderConfigResource[F](urlConfig, config)
   def me: Resource[F] = new NotImplementedResource[F]
   def default: Resource[F] = new NotFoundResource[F]
 }

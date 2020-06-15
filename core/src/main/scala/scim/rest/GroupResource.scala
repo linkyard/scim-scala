@@ -12,19 +12,19 @@ private class GroupResource[F[_]](urlConfig: UrlConfig)(implicit store: GroupSto
   private def pure[A]: A => F[A] = monad.pure
 
   override def get(subPath: Path, queryParams: QueryParams): F[Response] = {
-    Helpers.Get.retrieve(subPath, urlConfig.group)(store.get)
-      .orElse(Helpers.Get.search(subPath, queryParams)(store.search))
+    Helpers.Get.retrieve(subPath, urlConfig.base)(store.get)
+      .orElse(Helpers.Get.search(subPath, queryParams, urlConfig.base)(store.search))
       .getOrElse(pure(Response.notImplemented))
   }
 
   override def post(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
-    Helpers.Post.create(subPath, body, urlConfig.group)(store.create)
-      .orElse(Helpers.Post.search(subPath, body)(store.search))
+    Helpers.Post.create(subPath, body, urlConfig.base)(store.create)
+      .orElse(Helpers.Post.search(subPath, body, urlConfig.base)(store.search))
       .getOrElse(pure(Response.notImplemented))
   }
 
   override def put(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
-    Helpers.Put.update(subPath, body, urlConfig.group)(store.update)
+    Helpers.Put.update(subPath, body, urlConfig.base)(store.update)
       .getOrElse(pure(Response.notImplemented))
   }
 
@@ -35,7 +35,7 @@ private class GroupResource[F[_]](urlConfig: UrlConfig)(implicit store: GroupSto
 
   override def patch(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
     Helpers.Patch.patchArrayAttribute[F, Member](subPath, body, urlConfig.group)("members", store.addToGroup, store.removeFromGroup)
-      .orElse(Helpers.Patch.patchViaJson(subPath, body, urlConfig.group)(store.get, store.update, Schema.User))
+      .orElse(Helpers.Patch.patchViaJson(subPath, body, urlConfig.base)(store.get, store.update, Schema.User))
       .getOrElse(pure(Response.notImplemented))
   }
 }

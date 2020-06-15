@@ -2,20 +2,22 @@ package scim.rest
 
 import cats.Applicative
 import io.circe.Json
-import scim.model.SchemaDefinition
+import scim.model.{Meta, SchemaDefinition}
 import scim.rest.Resource.{Path, QueryParams}
 
-case class SchemasResource[F[_]](schemas: Iterable[SchemaDefinition])(implicit applicative: Applicative[F]) extends Resource[F] {
+case class SchemasResource[F[_]](urlConfig: UrlConfig, schemas: Iterable[SchemaDefinition])(implicit applicative: Applicative[F]) extends Resource[F] {
   private def pure[A]: A => F[A] = applicative.pure
 
   def get(subPath: Path, queryParams: QueryParams): F[Response] = {
-    Some(subPath.mkString("/")).filter(_.nonEmpty) match {
+    val schemaName = Some(subPath.mkString("/")).filter(_.nonEmpty)
+    schemaName match {
       case Some(name) =>
         pure(schemas.find(_.schema.asString == name)
-          .map(schema => Response.ok(schema.definition))
+          .map(schema => Response.ok(schema, urlConfig.base))
           .getOrElse(Response.notFound(name)))
       case None =>
-        pure(Response.ok(Json.arr(schemas.map(_.definition).toSeq: _*)))
+        val jsons = schemas.map(_.asJson(urlConfig.base)).toSeq
+        pure(Response.okJson(Json.arr(jsons: _*)))
     }
   }
 

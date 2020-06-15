@@ -1,5 +1,6 @@
 package scim.rest
 
+import java.net.URI
 import cats.Applicative
 import io.circe.Json
 import scim.model.Codecs._
@@ -13,8 +14,8 @@ case class ResourceTypeResource[F[_]](urlConfig: UrlConfig, resourceTypes: Itera
   private def pure[A]: A => F[A] = applicative.pure
 
   def get(subPath: Path, queryParams: QueryParams): F[Response] = {
-    Helpers.Get.retrieve(subPath, urlConfig.user)(doGet)
-      .orElse(Helpers.Get.search(subPath, queryParams)(doSearch))
+    Helpers.Get.retrieve(subPath, urlConfig.base)(doGet)
+      .orElse(Helpers.Get.search(subPath, queryParams, urlConfig.base)(doSearch))
       .getOrElse(pure(Response.notImplemented))
   }
 
@@ -24,7 +25,7 @@ case class ResourceTypeResource[F[_]](urlConfig: UrlConfig, resourceTypes: Itera
   }
 
   private def doSearch(filter: Filter, pageMode: Paging, sorting: Option[Sorting]): F[SearchResult[ResourceType]] = pure {
-    val filtered = resourceTypes.filter(rt => filter.evaluate(rt.asJson)).toSeq
+    val filtered = resourceTypes.filter(rt => filter.evaluate(rt.asJson(URI.create("urn:none")))).toSeq
     pageMode.applyTo(sorting.map(_.applyTo(filtered)).getOrElse(filtered))
   }
 

@@ -4,13 +4,14 @@ import cats.Applicative
 import io.circe.Json
 import scim.model.ServiceProviderConfiguration
 import scim.rest.Resource.{Path, QueryParams}
-import scim.model.Codecs._
-import io.circe.syntax._
 
-private class ServiceProviderConfigResource[F[_]](config: ServiceProviderConfiguration)(implicit applicative: Applicative[F]) extends Resource[F] {
+private class ServiceProviderConfigResource[F[_]](urlConfig: UrlConfig, config: ServiceProviderConfiguration)(
+  implicit applicative: Applicative[F]) extends Resource[F] {
   private def pure[A]: A => F[A] = applicative.pure
 
-  def get(subPath: Path, queryParams: QueryParams): F[Response] = pure(Response.ok(config.asJson))
+  def get(subPath: Path, queryParams: QueryParams): F[Response] = pure {
+    Response.okJson(config.asJson(urlConfig.base))
+  }
 
   def post(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = pure(Response.notImplemented)
   def put(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = pure(Response.notImplemented)

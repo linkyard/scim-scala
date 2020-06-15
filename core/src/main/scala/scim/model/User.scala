@@ -1,6 +1,7 @@
 package scim.model
 
-import java.net.URI
+import java.net.{URI, URLEncoder}
+import java.time.Instant
 import java.util.Locale
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.Decoder.Result
@@ -15,15 +16,28 @@ case class User(json: Json) extends ExtensibleModel[Root] with LazyLogging {
   lazy val root: Result[Root] = json.as[Root]
   def rootOrDefault: Root = root.toOption.getOrElse(Root.fallback)
 
+  override def asJson(base: URI): Json = {
+    root.toOption.map(root => root.metaOrDefault.resolveLocation(base))
+      .fold(json)(meta => json.deepMerge(Json.obj("meta" -> meta.asJson)))
+      .deepDropNullValues
+  }
+  override def meta: Meta = rootOrDefault.metaOrDefault
+
   def ++(other: Json): User = User(json.deepMerge(other))
 }
 
 object User {
   def apply(root: Root): User = User(root.asJson.deepDropNullValues)
 
+  def userMeta(id: String, created: Option[Instant] = None, lastModified: Option[Instant] = None, version: Option[String] = None): Meta = {
+    val name = URLEncoder.encode(id, "UTF-8")
+    Meta("User", locationRelative = Some(s"/Users/$name"), lastModified = lastModified, version = version)
+  }
+
   case class Root(
     userName: String,
     id: Option[String],
+    meta: Option[Meta] = None,
     name: Option[Name] = None,
     displayName: Option[String] = None,
     nickName: Option[String] = None,
@@ -46,6 +60,7 @@ object User {
     `urn:ietf:params:scim:schemas:extension:enterprise:2.0:User`: Option[EnterpriseUser] = None
   ) {
     def enterprise: Option[EnterpriseUser] = `urn:ietf:params:scim:schemas:extension:enterprise:2.0:User`
+    def metaOrDefault: Meta = userMeta(id.getOrElse(userName))
   }
   object Root {
     private[User] val fallback = Root(id = None, userName = "")

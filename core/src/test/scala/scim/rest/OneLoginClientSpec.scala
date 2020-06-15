@@ -1,5 +1,6 @@
 package scim.rest
 
+import java.net.URI
 import cats._
 import io.circe.parser.parse
 import org.scalatest.funspec.AnyFunSpec
@@ -17,6 +18,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
   private implicit object Groups extends MockOptimizedGroupStore
 
   private val urlRoot = "https://host.local/scim/v2"
+  private val base = URI.create(urlRoot)
   private val api = RestApi[Id](UrlConfig(urlRoot))
 
   private val root: Path = Seq.empty
@@ -27,11 +29,14 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
   }
 
   describe("client OneLogin") {
-    val user1 = User(User.Root(userName = "hans.mueller", id = Some("a-id-1")))
-    val user1b = User(User.Root(userName = "hans.mueller", id = user1.id, displayName = Some("Mülli")))
-    val user2 = User(User.Root(userName = "peter.meier", id = Some("a-id-2")))
-    val group1 = Group(Group.Root(displayName = "Group A", id = Some("g-a")))
-    val group2 = Group(Group.Root(displayName = "Group B", id = Some("g-b")))
+    val user1 = User(User.Root(userName = "hans.mueller", id = Some("a-id-1"),
+      meta = Some(User.userMeta("a-id-1").resolveLocation(base))))
+    val user1b = User(User.Root(userName = "hans.mueller", id = user1.id, displayName = Some("Mülli"),
+      meta = Some(User.userMeta("a-id-1").resolveLocation(base))))
+    val user2 = User(User.Root(userName = "peter.meier", id = Some("a-id-2"),
+      meta = Some(User.userMeta("a-id-1").resolveLocation(base))))
+    val group1 = Group(Group.Root(displayName = "Group A", id = Some("g-a"), meta = Some(Group.groupMeta("g-a").resolveLocation(base))))
+    val group2 = Group(Group.Root(displayName = "Group B", id = Some("g-b"), meta = Some(Group.groupMeta("g-b").resolveLocation(base))))
 
     it("should activate") {
       Users.content = Seq(user1, user2)
@@ -162,7 +167,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
 
     it("should update user") {
       Users.content = Seq(user1, user2)
-      val r = api.user.put(Seq("a-id-1"), Map.empty, body = user1b.asJson)
+      val r = api.user.put(Seq("a-id-1"), Map.empty, body = user1b.asJson(base))
       r.status should be(200)
       r.body.value.as[User].value should be(user1b)
       Users.content should have size (2)
@@ -174,7 +179,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       Groups.content = Seq(group1)
 
       // Update user
-      val r1 = api.user.put(Seq("a-id-1"), Map.empty, body = user1.asJson)
+      val r1 = api.user.put(Seq("a-id-1"), Map.empty, body = user1.asJson(base))
       r1.status should be(200)
       r1.body.value.as[User].value should be(user1)
 
@@ -211,7 +216,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       Groups.content = Seq(group1)
 
       // Update user
-      val r1 = api.user.put(Seq("a-id-1"), Map.empty, body = user1.asJson)
+      val r1 = api.user.put(Seq("a-id-1"), Map.empty, body = user1.asJson(base))
       r1.status should be(200)
       r1.body.value.as[User].value should be(user1)
 
@@ -268,7 +273,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
 
       //Set user to inactive
       val r2 = api.user.put(Seq(user1.id.get), Map.empty,
-        body = User(user1.rootOrDefault.copy(active = Some(false), id = None)).asJson)
+        body = User(user1.rootOrDefault.copy(active = Some(false))).asJson(base))
       r2.status should be(200)
       User(r2.body.value).rootOrDefault.active should be(Some(false))
 

@@ -3,7 +3,7 @@ package scim.rest
 import java.net.URI
 import io.circe.{DecodingFailure, Encoder, Json}
 import io.circe.syntax._
-import scim.model.Error
+import scim.model.{Error, JsonModel, Meta}
 import scim.model.Codecs._
 
 case class Response(status: Int, body: Option[Json] = None, locationHeader: Option[URI] = None)
@@ -14,7 +14,10 @@ object Response {
   private val defaultHeaders = Map("Content-Type" -> "application/scim+json")
 
   def ok: Response = Response(200, None)
-  def ok(body: Json, locationHeader: Option[URI] = None): Response = Response(200, Some(body), locationHeader = locationHeader)
+  def ok(body: JsonModel, base: URI): Response = okJson(body.asJson(base), locationHeader = body.meta.resolveLocation(base).location)
+  def okJson(body: Json, locationHeader: Option[URI] = None): Response = {
+    Response(200, Some(body), locationHeader = locationHeader)
+  }
   def noContent: Response = Response(204, None)
   def noContent(locationHeader: URI): Response = Response(204, None, locationHeader = Some(locationHeader))
 

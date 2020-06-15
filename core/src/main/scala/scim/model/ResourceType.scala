@@ -1,6 +1,9 @@
 package scim.model
 
+import java.net.URI
 import io.circe.Json
+import io.circe.syntax._
+import Codecs._
 import scim.model.ResourceType.SchemaExtension
 
 /** RFC 7643 chapter 6 */
@@ -13,7 +16,9 @@ case class ResourceType(
   schemaExtensions: Seq[SchemaExtension] = Nil,
   schemas: Seq[Schema] = List(Schema.ResourceType),
 ) extends RootModel with JsonModel {
-  def asJson: Json = Codecs.resourceTypeCode(this)
+  def asJson(base: URI): Json = Codecs.resourceTypeCode(this)
+    .deepMerge(Json.obj("meta" -> meta.resolveLocation(base).asJson))
+  override def meta: Meta = Meta("ResourceType", locationRelative = Some(s"/ResourceType/${id}"))
 }
 
 object ResourceType {

@@ -58,12 +58,13 @@ class UserSpec extends AnyFunSpec with Matchers with OptionValues {
     }
 
     it("should serialize roundtrip to json without changing") {
+      def ignoreMeta(json: Json): Json = json.mapObject(_.remove("meta"))
       def roundtrip(original: Json) = {
         val r = Codecs.userDecoder.decodeJson(original)
         r.isRight should be(true)
         val user = r.getOrElse(fail(""))
-        val json = user.asJson
-        json should be(original)
+        val json = user.asJson(URI.create("urn:none"))
+        ignoreMeta(json) should be(ignoreMeta(original))
       }
 
       roundtrip(Jsons.userMinimal)

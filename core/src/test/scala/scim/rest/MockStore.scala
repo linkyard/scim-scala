@@ -1,5 +1,6 @@
 package scim.rest
 
+import java.net.URI
 import java.util.UUID
 import cats.Id
 import io.circe.Json.JString
@@ -19,7 +20,7 @@ trait MockStore[A <: ExtensibleModel[_]] {
   def get(id: String) = content.find(_.id.contains(id)).toRight(DoesNotExist(id))
 
   def search(filter: Filter, paging: Paging, sorting: Option[Sorting]) = {
-    val all = content.filter(u => filter.evaluate(u.asJson, schema))
+    val all = content.filter(u => filter.evaluate(u.asJson(URI.create("urn:none")), schema))
     val sorted = sorting.map(_.applyTo(all)).getOrElse(all)
     paging.applyTo(sorted)
   }
@@ -28,7 +29,7 @@ trait MockStore[A <: ExtensibleModel[_]] {
     assert(entity.id.isEmpty)
     content.find(duplicate(_, entity)).map(_ => Left(AlreadyExists))
       .getOrElse {
-        val withId = Json.fromJsonObject(entity.asJson.asObject.get.add("id", Json.fromString(UUID.randomUUID().toString))).as[A]
+        val withId = Json.fromJsonObject(entity.asJson(URI.create("urn:none")).asObject.get.add("id", Json.fromString(UUID.randomUUID().toString))).as[A]
           .getOrElse(throw new AssertionError("not reparsable to object"))
         content = content.appended(withId)
         Right(withId)

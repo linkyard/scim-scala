@@ -1,5 +1,6 @@
 package scim.model
 
+import java.net.URI
 import io.circe.Json
 import org.scalatest.OptionValues
 import org.scalatest.funspec.AnyFunSpec
@@ -32,12 +33,13 @@ class GroupSpec extends AnyFunSpec with Matchers with OptionValues {
     }
 
     it("should serialize roundtrip to json without changing") {
+      def ignoreMeta(json: Json): Json = json.mapObject(_.remove("meta"))
       def roundtrip(original: Json) = {
         val r = Codecs.groupDecoder.decodeJson(original)
         r.isRight should be(true)
         val group = r.getOrElse(fail(""))
-        val json = group.asJson
-        json should be(original)
+        val json = group.asJson(URI.create("urn:none"))
+        ignoreMeta(json) should be(ignoreMeta(original))
       }
 
       roundtrip(Jsons.group)
