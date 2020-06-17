@@ -3,7 +3,6 @@ package scim.rest
 import java.net.URI
 import java.util.UUID
 import cats.Id
-import io.circe.Json.JString
 import io.circe.{Decoder, Json}
 import scim.model.Filter.{AttributePath, Comparison, StringValue}
 import scim.model.{Codecs, ExtensibleModel, Filter, Group, Schema, User}

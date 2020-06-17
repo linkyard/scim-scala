@@ -129,7 +129,8 @@ object PatchOp {
       private[PatchOp] def execute(on: Json, context: OperationContext): Either[String, Json] = {
         context.path match {
           case None =>
-            Right(root.json.modify(_ => context.value)(on))
+            val f = root.json.modify(_.deepMerge(context.value))
+            Right(f(on))
           case Some(ap@AttributePath(_, _, None)) =>
             Right(ap.basePath(context.defaultSchema).json.modify(_ => context.value)(on))
           case Some(ap@AttributePath(_, _, Some(sub))) =>

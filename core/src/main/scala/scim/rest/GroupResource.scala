@@ -4,7 +4,6 @@ import cats.Monad
 import io.circe.Json
 import scim.model.Codecs._
 import scim.model.Group.Member
-import scim.model._
 import scim.rest.Resource.{Path, QueryParams}
 import scim.spi.GroupStore
 
