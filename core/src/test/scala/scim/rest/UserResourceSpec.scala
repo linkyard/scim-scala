@@ -53,7 +53,7 @@ class UserResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         val u = store.content.head
         u.rootOrDefault.emails.value
           .find(_.`type`.contains("work"))
-          .value.value should be("test-user@test.ch")
+          .value.value.value should be("test-user@test.ch")
       })
 
       it("should update displayName")(withIt { (rest: UserResource[Id], store: MockStore[User]) =>

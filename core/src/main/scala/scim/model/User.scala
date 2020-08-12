@@ -92,7 +92,7 @@ object User {
     manager: Option[UserRef],
   )
   case class SimpleValue(value: String)
-  case class ValueWithTypeAndDisplay(value: String, display: Option[String], `type`: Option[String])
+  case class ValueWithTypeAndDisplay(value: Option[String], display: Option[String], `type`: Option[String])
   case class UserRef(
     value: String,
     `$ref`: Option[String],
