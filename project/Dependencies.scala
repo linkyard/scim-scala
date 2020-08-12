@@ -1,7 +1,7 @@
 import sbt._
 
 object Dependencies {
-  val scala = "2.13.2"
+  val scala = "2.13.3"
 
   val cats = "2.1.1"
   val catsEffect = "2.1.2"
@@ -10,11 +10,11 @@ object Dependencies {
   def diffson = "4.0.2"
   val fastParse = "2.3.0"
   val scalaLogging = "3.9.2"
-  val kamon = "2.1.0"
+  val kamon = "2.1.4"
 
-  val scalatest = "3.1.2"
+  val scalatest = "3.2.1"
   val scalacheck = "1.14.3"
-  val scalatestScalacheck = "3.1.2.0"
+  val scalatestScalacheck = "3.2.1.0"
   val scalacheckShapeless = "1.2.5"
 
   val logBinding: Seq[ModuleID] = Seq(
