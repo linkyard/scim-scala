@@ -1,14 +1,13 @@
 package scim.model
 
-import java.net.URI
-import io.circe.syntax._
-import io.circe.{Json, parser}
-import Codecs._
-import Arbitraries._
 import org.scalatest.OptionValues
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.Checkers
+import scim.model.Arbitraries.given
+import scim.model.Codecs.*
+
+import java.net.URI
 
 class ResourceTypeSpec extends AnyFunSpec with Checkers with Matchers with OptionValues {
   describe("ResourceType") {

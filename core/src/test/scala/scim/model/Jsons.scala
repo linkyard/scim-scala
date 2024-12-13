@@ -1,13 +1,14 @@
 package scim.model
 
-import io.circe.{Json, parser}
+import io.circe.Json
+import io.circe.parser
 
 object Jsons {
   private def parse(string: String): Json = parser.parse(string).getOrElse(throw new AssertionError("parsing failed"))
 
   def ignoreMeta(json: Json): Json = json.mapObject(_.remove("meta"))
 
-  val userMinimal = parse(
+  val userMinimal: Json = parse(
     """
       |{
       |  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
@@ -22,18 +23,20 @@ object Jsons {
       |     "https://example.com/v2/Users/2819c223-7f76-453a-919d-413861904646"
       |  }
       |}
-      |""".stripMargin)
+      |""".stripMargin
+  )
 
-  val userMinimalExternal = parse(
+  val userMinimalExternal: Json = parse(
     """
       |{
       |  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
       |  "externalId": "2819c223-7f76-453a-919d-413861904646",
       |  "userName": "bjensen@example.com"
       |}
-      |""".stripMargin)
+      |""".stripMargin
+  )
 
-  val userFull = parse(
+  val userFull: Json = parse(
     """
       |{
       |  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User", "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User"],
@@ -164,10 +167,10 @@ object Jsons {
       |"https://example.com/v2/Users/2819c223-7f76-453a-919d-413861904646"
       |  }
       |}
-      |""".stripMargin)
+      |""".stripMargin
+  )
 
-
-  val group = parse(
+  val group: Json = parse(
     """
       |       {
       |         "id": "6c5bb468-14b2-4183-baf2-06d523e03bd3",
@@ -188,8 +191,9 @@ object Jsons {
       |           }
       |         ]
       |       }
-      |""".stripMargin)
-  val group2 = parse(
+      |""".stripMargin
+  )
+  val group2: Json = parse(
     """
       |       {
       |         "id": "6c5bb468-14b2-4183-baf2-06d523e03bd3",
@@ -215,8 +219,9 @@ object Jsons {
       |           }
       |         ]
       |       }
-      |""".stripMargin)
-  val groupEmpty = parse(
+      |""".stripMargin
+  )
+  val groupEmpty: Json = parse(
     """
       |       {
       |         "id": "6c5bb468-14b2-4183-baf2-06d523e03bd3",
@@ -230,5 +235,6 @@ object Jsons {
       |           "version": "W\/\"wGB85s2QJMjiNnuI\""
       |         }
       |       }
-      |""".stripMargin)
+      |""".stripMargin
+  )
 }

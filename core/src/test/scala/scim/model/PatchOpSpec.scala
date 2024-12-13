@@ -1,13 +1,14 @@
 package scim.model
 
-import io.circe.syntax._
-import io.circe.{Json, parser}
-import Codecs._
+import io.circe.Json
+import io.circe.parser
+import io.circe.syntax.*
+import org.scalatest.OptionValues
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.Checkers
-import Arbitraries._
-import org.scalatest.OptionValues
+import scim.model.Arbitraries.given
+import scim.model.Codecs.*
 
 class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValues {
   describe("PatchOp") {
@@ -45,7 +46,8 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
             |       }
             |     ]
             |   }
-            |""".stripMargin)
+            |""".stripMargin
+        )
 
         val before = Jsons.group
 
@@ -75,7 +77,8 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
             |           }
             |         ]
             |       }
-            |""".stripMargin)
+            |""".stripMargin
+        )
 
         patch.applyTo(Schema.Group)(before) should be(Right(after))
       }
@@ -100,7 +103,8 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
             |       }
             |     ]
             |   }
-            |""".stripMargin)
+            |""".stripMargin
+        )
 
         val before = Jsons.groupEmpty
 
@@ -125,7 +129,8 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
             |           }
             |         ]
             |       }
-            |""".stripMargin)
+            |""".stripMargin
+        )
 
         patch.applyTo(Schema.Group)(before) should be(Right(after))
       }
@@ -149,7 +154,8 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
             |       }
             |     }]
             |   }
-            |""".stripMargin)
+            |""".stripMargin
+        )
 
         val before = Jsons.userMinimal
 
@@ -175,7 +181,8 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
             |  ],
             |  "nickname":"Babs"
             |}
-            |""".stripMargin)
+            |""".stripMargin
+        )
 
         patch.applyTo(Schema.User)(before) should be(Right(after))
       }
@@ -192,7 +199,8 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
             |      "value": "Barbara"
             |     }]
             |   }
-            |""".stripMargin)
+            |""".stripMargin
+        )
 
         val before = Jsons.userMinimal
 
@@ -214,7 +222,8 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
             |    "givenName": "Barbara"
             |  }
             |}
-            |""".stripMargin)
+            |""".stripMargin
+        )
 
         patch.applyTo(Schema.User)(before) should be(Right(after))
       }
@@ -242,7 +251,8 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
             |       ]
             |     }]
             |   }
-            """.stripMargin)
+            """.stripMargin
+        )
 
         val before = Jsons.group
 
@@ -280,7 +290,8 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
             |       }
             |     }]
             |   }
-            """.stripMargin)
+            """.stripMargin
+        )
 
         val before = Jsons.userFull
 
@@ -310,7 +321,8 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
             |     }]
             |   }
             |
-            """.stripMargin)
+            """.stripMargin
+        )
 
         val before = Jsons.userFull
 
@@ -333,7 +345,8 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
             |     }]
             |   }
             |
-            """.stripMargin)
+            """.stripMargin
+        )
 
         val before = Jsons.userFull
 
@@ -358,7 +371,8 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
             |     }]
             |   }
             |
-            """.stripMargin)
+            """.stripMargin
+        )
 
         val before = Jsons.group
 
@@ -379,7 +393,8 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
             |     }]
             |   }
             |
-            """.stripMargin)
+            """.stripMargin
+        )
 
         val before = Jsons.userFull
 
@@ -406,7 +421,8 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
             |     }]
             |   }
             |
-            """.stripMargin)
+            """.stripMargin
+        )
 
         val before = Jsons.group2
 
@@ -427,7 +443,8 @@ class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValu
             |       "path":"addresses[type eq \"home\"].region"
             |     }]
             |   }
-            """.stripMargin)
+            """.stripMargin
+        )
 
         val before = Jsons.userFull
 

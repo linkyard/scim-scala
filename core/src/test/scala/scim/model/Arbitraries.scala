@@ -1,27 +1,29 @@
 package scim.model
 
-import java.net.URI
 import io.circe.Json
 import io.circe.testing.ArbitraryInstances
-import org.scalacheck.{Arbitrary, Gen}
-import scim.model.Filter.Comparison._
-import scim.model.Filter._
-import scim.model.ResourceType.SchemaExtension
 import io.github.martinhh.derived.scalacheck.deriveArbitrary
+import org.scalacheck.Arbitrary
+import org.scalacheck.Gen
+import scim.model.Filter.*
+import scim.model.Filter.Comparison.*
+import scim.model.ResourceType.SchemaExtension
+
+import java.net.URI
 
 object Arbitraries {
-  implicit val json: Arbitrary[Json] = new ArbitraryInstances {}.arbitraryJson
+  given json: Arbitrary[Json] = new ArbitraryInstances {}.arbitraryJson
 
   implicit val uri: Arbitrary[URI] = Arbitrary(Gen.oneOf(
     URI.create("https://example.local/aaa"),
     URI.create("https://host.local/bbb"),
   ))
 
-  implicit def value: Arbitrary[Value] = Arbitrary(Gen.frequency(
+  given value: Arbitrary[Value] = Arbitrary(Gen.frequency(
     (1, Gen.const(NullValue)),
-    (2, implicitly[Arbitrary[Boolean]].arbitrary.map(BooleanValue)),
-    (5, implicitly[Arbitrary[Double]].arbitrary.map(NumberValue)),
-    (10, Gen.alphaNumStr.map(StringValue)),
+    (2, implicitly[Arbitrary[Boolean]].arbitrary.map(BooleanValue.apply)),
+    (5, implicitly[Arbitrary[Double]].arbitrary.map(NumberValue.apply)),
+    (10, Gen.alphaNumStr.map(StringValue.apply)),
   ))
 
   def schema: Arbitrary[Schema] = Arbitrary(Gen.frequency(
@@ -35,49 +37,54 @@ object Arbitraries {
     first <- alpha
     more <- Gen.listOfN(10, alphaNum).map(_.mkString)
   yield first.toString + more)
-  implicit def attributePath: Arbitrary[AttributePath] = Arbitrary(for
+  given attributePath: Arbitrary[AttributePath] = Arbitrary(for
     name <- attributeName.arbitrary
     schema <- Gen.oneOf(Gen.const(None), schema.arbitrary.map(Some.apply))
     subPath <- Gen.oneOf(Gen.const(None), attributeName.arbitrary.map(Some.apply))
   yield AttributePath(name, schema, subPath))
-  implicit def filteredAttributePath: Arbitrary[FilteredAttributePath] = Arbitrary(for
+  given filteredAttributePath: Arbitrary[FilteredAttributePath] = Arbitrary(for
     name <- attributeName.arbitrary
     filter <- aValueFilter.arbitrary
     schema <- Gen.oneOf(Gen.const(None), schema.arbitrary.map(Some.apply))
     subPath <- Gen.oneOf(Gen.const(None), attributeName.arbitrary.map(Some.apply))
   yield FilteredAttributePath(name, filter, schema, subPath))
 
-  implicit def comparison: Arbitrary[Comparison] = Arbitrary(for
+  given comparison: Arbitrary[Comparison] = Arbitrary(for
     path <- attributePath.arbitrary
     value <- value.arbitrary
     op <- Gen.oneOf(Seq(
-      Equal.apply, NotEqual.apply, Contains.apply,
-      StartsWith.apply, EndsWith.apply,
-      GreaterThan.apply, GreaterThanOrEqual.apply,
-      LessThan.apply, LessThanOrEqual.apply,
+      Equal.apply,
+      NotEqual.apply,
+      Contains.apply,
+      StartsWith.apply,
+      EndsWith.apply,
+      GreaterThan.apply,
+      GreaterThanOrEqual.apply,
+      LessThan.apply,
+      LessThanOrEqual.apply,
     ))
   yield op(path, value))
 
-  implicit def logicalOperation: Arbitrary[LogicalOperation] = Arbitrary(for
+  given logicalOperation: Arbitrary[LogicalOperation] = Arbitrary(for
     a <- aSimpleFilter.arbitrary
     b <- aSimpleFilter.arbitrary
     op <- Gen.oneOf(Seq(And.apply, Or.apply))
   yield op(a, b))
 
-  implicit def complexAttributeFilter: Arbitrary[ComplexAttributeFilter] = Arbitrary(for
+  given complexAttributeFilter: Arbitrary[ComplexAttributeFilter] = Arbitrary(for
     path <- attributePath.arbitrary
     aValueFilter <- aValueFilter.arbitrary
   yield ComplexAttributeFilter(path, aValueFilter))
 
-  implicit def aSimpleFilter: Arbitrary[AFilter] = {
+  given aSimpleFilter: Arbitrary[AFilter] = {
     Arbitrary(Gen.frequency(
       (1, complexAttributeFilter.arbitrary),
       (2, comparison.arbitrary),
     ))
   }
 
-  implicit def aValueFilter: Arbitrary[AFilter] = {
-    implicit def log: Arbitrary[LogicalOperation] = Arbitrary(for
+  given aValueFilter: Arbitrary[AFilter] = {
+    given log: Arbitrary[LogicalOperation] = Arbitrary(for
       a <- comparison.arbitrary
       b <- comparison.arbitrary
       op <- Gen.oneOf(Seq(And.apply, Or.apply))
@@ -89,7 +96,7 @@ object Arbitraries {
     ))
   }
 
-  implicit def aFilter: Arbitrary[AFilter] = {
+  given aFilter: Arbitrary[AFilter] = {
     Arbitrary(Gen.frequency(
       (1, logicalOperation.arbitrary),
       (2, complexAttributeFilter.arbitrary),
@@ -97,12 +104,12 @@ object Arbitraries {
     ))
   }
 
-  implicit def filter: Arbitrary[Filter] = Arbitrary(Gen.frequency(
+  given filter: Arbitrary[Filter] = Arbitrary(Gen.frequency(
     20 -> aFilter.arbitrary,
     1 -> Gen.const(NoFilter),
   ))
 
-  implicit def patchOpOperation: Arbitrary[PatchOp.Operation] = Arbitrary(for
+  given patchOpOperation: Arbitrary[PatchOp.Operation] = Arbitrary(for
     op <- Gen.oneOf(PatchOp.OperationType.Add, PatchOp.OperationType.Remove, PatchOp.OperationType.Replace)
     path <- Gen.frequency(
       1 -> Gen.const(None),
@@ -112,21 +119,29 @@ object Arbitraries {
     value <- json.arbitrary
   yield PatchOp.Operation(op, path, Some(value).filterNot(_.isNull)))
 
-  implicit def patchOp: Arbitrary[PatchOp] = Arbitrary(Gen.nonEmptyListOf(patchOpOperation.arbitrary).map(ops => PatchOp(ops)))
+  given patchOp: Arbitrary[PatchOp] = Arbitrary(Gen.nonEmptyListOf(patchOpOperation.arbitrary).map(ops => PatchOp(ops)))
 
-  implicit def schemaExtension: Arbitrary[SchemaExtension] = Arbitrary(for
+  given schemaExtension: Arbitrary[SchemaExtension] = Arbitrary(for
     schema <- schema.arbitrary
     required <- Arbitrary.arbBool.arbitrary
   yield SchemaExtension(schema, required))
 
-  implicit def resourceType: Arbitrary[ResourceType] = Arbitrary(
+  given resourceType: Arbitrary[ResourceType] = Arbitrary(
     for
       id <- attributeName.arbitrary
       name <- attributeName.arbitrary
       description <- attributeName.arbitrary
       schemaExtensions <- Gen.listOf(schemaExtension.arbitrary)
     yield ResourceType(
-      id = id, name = name, description = description,
-      endpoint = s"/$id", schemaExtensions = schemaExtensions
-    ))
+      id = id,
+      name = name,
+      description = description,
+      endpoint = s"/$id",
+      schemaExtensions = schemaExtensions,
+    )
+  )
+
+  given Arbitrary[SortOrder] = deriveArbitrary
+
+  given Arbitrary[ServiceProviderConfiguration] = deriveArbitrary
 }

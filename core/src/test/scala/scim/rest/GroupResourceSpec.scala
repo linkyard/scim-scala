@@ -1,14 +1,16 @@
 package scim.rest
 
-import java.net.URI
 import cats.Id
 import io.circe.parser.parse
-import org.scalatest.funspec.AnyFunSpec
-import scim.model.{Group, Jsons}
-import scim.model.Group.Member
-import TestHelpers._
 import org.scalatest.OptionValues
+import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
+import scim.model.Group
+import scim.model.Group.Member
+import scim.model.Jsons
+import scim.rest.TestHelpers.*
+
+import java.net.URI
 
 class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
   private def withResource[A](optimizable: Boolean)(f: (GroupResource[Id], MockStore[Group]) => A): A = {
@@ -27,17 +29,28 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
   describe("Group Resource") {
     val base = URI.create("https://host.local")
 
-    val group1 = Group(Group.Root(id = Some("g1"), displayName = "Group 1", members = Some(Seq(Member("u-1"))),
-      meta = Some(Group.groupMeta("g-a").resolveLocation(base))))
-    val group1b = Group(Group.Root(id = Some("g1"), displayName = "Group 1", members = Some(
-      Seq(Member("u-1"), Member("u-2"), Member("u-3"))),
-      meta = Some(Group.groupMeta("g-a").resolveLocation(base))))
+    val group1 = Group(Group.Root(
+      id = Some("g1"),
+      displayName = "Group 1",
+      members = Some(Seq(Member("u-1"))),
+      meta = Some(Group.groupMeta("g-a").resolveLocation(base)),
+    ))
+    val group1b = Group(Group.Root(
+      id = Some("g1"),
+      displayName = "Group 1",
+      members = Some(
+        Seq(Member("u-1"), Member("u-2"), Member("u-3"))
+      ),
+      meta = Some(Group.groupMeta("g-a").resolveLocation(base)),
+    ))
     val group2 = Group(Jsons.group2)
 
     def tests(withIt: Boolean => ((GroupResource[Id], MockStore[Group]) => Unit) => Unit): Unit = {
       it("should update if patched with single adds on member")(withIt(true) { (rest, store) =>
         store.content = Seq(group1, group2)
-        val r = rest.patch(Seq("g1"), Map.empty,
+        val r = rest.patch(
+          Seq("g1"),
+          Map.empty,
           body = parse(
             """
               |{
@@ -50,13 +63,17 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
               |      "path": "members"
               |    }]
               |}
-              |""".stripMargin).value
+              |""".stripMargin
+          ).value,
         )
         if r.status == 200 then {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
-          Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(id = Some("g1"), displayName = "Group 1",
-            members = Some(Seq(Member("u-1"), Member("u-2", display = Some("User 2"))))))
+          Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(
+            id = Some("g1"),
+            displayName = "Group 1",
+            members = Some(Seq(Member("u-1"), Member("u-2", display = Some("User 2")))),
+          ))
         } else {
           r.status should be(204)
           r.body should be(None)
@@ -71,7 +88,9 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
 
       it("should update if patched with multiple adds on member")(withIt(true) { (rest, store) =>
         store.content = Seq(group1, group2)
-        val r = rest.patch(Seq("g1"), Map.empty,
+        val r = rest.patch(
+          Seq("g1"),
+          Map.empty,
           body = parse(
             """
               |{
@@ -86,13 +105,22 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
               |      "path": "members"
               |    }]
               |}
-              |""".stripMargin).value
+              |""".stripMargin
+          ).value,
         )
         if r.status == 200 then {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
-          Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(id = Some("g1"), displayName = "Group 1", members = Some(Seq(Member("u-1"),
-            Member("u-2", display = Some("User 2")), Member("u-3", display = Some("User 3")), Member("u-4", display = Some("User 4"))))))
+          Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(
+            id = Some("g1"),
+            displayName = "Group 1",
+            members = Some(Seq(
+              Member("u-1"),
+              Member("u-2", display = Some("User 2")),
+              Member("u-3", display = Some("User 3")),
+              Member("u-4", display = Some("User 4")),
+            )),
+          ))
         } else {
           r.status should be(204)
           r.body should be(None)
@@ -109,7 +137,9 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
 
       it("should update if patched with single remove on member")(withIt(true) { (rest, store) =>
         store.content = Seq(group1b, group2)
-        val r = rest.patch(Seq("g1"), Map.empty,
+        val r = rest.patch(
+          Seq("g1"),
+          Map.empty,
           body = parse(
             """
               |{
@@ -119,13 +149,17 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
               |      "path": "members[value eq \"u-1\"]"
               |    }]
               |}
-              |""".stripMargin).value
+              |""".stripMargin
+          ).value,
         )
         if r.status == 200 then {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
-          Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(id = Some("g1"), displayName = "Group 1",
-            members = Some(Seq(Member("u-2"), Member("u-3")))))
+          Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(
+            id = Some("g1"),
+            displayName = "Group 1",
+            members = Some(Seq(Member("u-2"), Member("u-3"))),
+          ))
         } else {
           r.status should be(204)
           r.body should be(None)
@@ -138,11 +172,14 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         members.exists(_.value == "u-3") should be(true)
       })
 
-      it("should update if patched with single remove on member (alternative/weird way)")(withIt(true) { (rest, store) =>
-        store.content = Seq(group1b, group2)
-        val r = rest.patch(Seq("g1"), Map.empty,
-          body = parse(
-            """
+      it("should update if patched with single remove on member (alternative/weird way)")(withIt(true) {
+        (rest, store) =>
+          store.content = Seq(group1b, group2)
+          val r = rest.patch(
+            Seq("g1"),
+            Map.empty,
+            body = parse(
+              """
               |{
               |  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
               |  "Operations": [{
@@ -151,28 +188,34 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
               |      "value": [{"value": "u-1"}]
               |    }]
               |}
-              |""".stripMargin).value
-        )
-        if r.status == 200 then {
-          r.status should be(200)
-          Group(r.body.value).id.value should be("g1")
-          Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(id = Some("g1"), displayName = "Group 1",
-            members = Some(Seq(Member("u-2"), Member("u-3")))))
-        } else {
-          r.status should be(204)
-          r.body should be(None)
-        }
+              |""".stripMargin
+            ).value,
+          )
+          if r.status == 200 then {
+            r.status should be(200)
+            Group(r.body.value).id.value should be("g1")
+            Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(
+              id = Some("g1"),
+              displayName = "Group 1",
+              members = Some(Seq(Member("u-2"), Member("u-3"))),
+            ))
+          } else {
+            r.status should be(204)
+            r.body should be(None)
+          }
 
-        store.content should have size 2
-        val members = store.content.find(_.id.contains("g1")).value.rootOrDefault.members.value
-        members should have size 2
-        members.exists(_.value == "u-2") should be(true)
-        members.exists(_.value == "u-3") should be(true)
+          store.content should have size 2
+          val members = store.content.find(_.id.contains("g1")).value.rootOrDefault.members.value
+          members should have size 2
+          members.exists(_.value == "u-2") should be(true)
+          members.exists(_.value == "u-3") should be(true)
       })
 
       it("should use update if patched with multiple remove on member")(withIt(false) { (rest, store) =>
         store.content = Seq(group1b, group2)
-        val r = rest.patch(Seq("g1"), Map.empty,
+        val r = rest.patch(
+          Seq("g1"),
+          Map.empty,
           body = parse(
             """
               |{
@@ -182,13 +225,17 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
               |      "path": "members[value ne \"u-1\"]"
               |    }]
               |}
-              |""".stripMargin).value
+              |""".stripMargin
+          ).value,
         )
         if r.status == 200 then {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
-          Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(id = Some("g1"), displayName = "Group 1",
-            members = Some(Seq(Member("u-1")))))
+          Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(
+            id = Some("g1"),
+            displayName = "Group 1",
+            members = Some(Seq(Member("u-1"))),
+          ))
         } else {
           r.status should be(204)
           r.body should be(None)

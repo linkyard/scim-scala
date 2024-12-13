@@ -1,14 +1,14 @@
 package scim.rest
 
-import java.net.URI
 import cats.Id
 import io.circe.parser.parse
 import org.scalatest.OptionValues
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import scim.model.User
-import scim.rest.TestHelpers._
+import scim.rest.TestHelpers.*
 
+import java.net.URI
 
 class UserResourceSpec extends AnyFunSpec with Matchers with OptionValues {
   private def withResource[A](f: (UserResource[Id], MockStore[User]) => A): A = {
@@ -20,14 +20,17 @@ class UserResourceSpec extends AnyFunSpec with Matchers with OptionValues {
   describe("User Resource") {
     val base = URI.create("https://host.local")
 
-    val user1 = User(User.Root("user-1", id = Some("user-1"),
-      meta = Some(User.userMeta("user-1").resolveLocation(base))))
+    val user1 =
+      User(User.Root("user-1", id = Some("user-1"), meta = Some(User.userMeta("user-1").resolveLocation(base))))
 
     def tests(withIt: ((UserResource[Id], MockStore[User]) => Unit) => Unit): Unit = {
       it("should update email")(withIt { (rest: UserResource[Id], store: MockStore[User]) =>
         store.content = Seq(user1)
-        val r = rest.patch(Seq("user-1"), Map.empty, body = parse(
-          """{
+        val r = rest.patch(
+          Seq("user-1"),
+          Map.empty,
+          body = parse(
+            """{
             |  "schemas": [
             |    "urn:ietf:params:scim:api:messages:2.0:PatchOp"
             |  ],
@@ -45,7 +48,8 @@ class UserResourceSpec extends AnyFunSpec with Matchers with OptionValues {
             |    }
             |  ]
             |}
-            |""".stripMargin).value
+            |""".stripMargin
+          ).value,
         )
         r.status should be(200)
 
@@ -58,8 +62,11 @@ class UserResourceSpec extends AnyFunSpec with Matchers with OptionValues {
 
       it("should update displayName")(withIt { (rest: UserResource[Id], store: MockStore[User]) =>
         store.content = Seq(user1)
-        val r = rest.patch(Seq("user-1"), Map.empty, body = parse(
-          """{
+        val r = rest.patch(
+          Seq("user-1"),
+          Map.empty,
+          body = parse(
+            """{
             |  "schemas": [
             |    "urn:ietf:params:scim:api:messages:2.0:PatchOp"
             |  ],
@@ -72,7 +79,8 @@ class UserResourceSpec extends AnyFunSpec with Matchers with OptionValues {
             |    }
             |  ]
             |}
-            |""".stripMargin).value
+            |""".stripMargin
+          ).value,
         )
         r.status should be(200)
 

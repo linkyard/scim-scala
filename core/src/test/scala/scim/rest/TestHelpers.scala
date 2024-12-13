@@ -1,7 +1,9 @@
 package scim.rest
 
-import io.circe.{Decoder, Json, ParsingFailure}
-import org.scalatest.matchers.should.Matchers._
+import io.circe.Decoder
+import io.circe.Json
+import io.circe.ParsingFailure
+import org.scalatest.matchers.should.Matchers.*
 
 object TestHelpers {
   implicit class ParserValues(r: Either[ParsingFailure, Json]) {

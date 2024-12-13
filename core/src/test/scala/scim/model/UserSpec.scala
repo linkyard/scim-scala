@@ -1,11 +1,12 @@
 package scim.model
 
-import java.net.URI
 import io.circe.Json
 import org.scalatest.OptionValues
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import scim.model.User.UserRef
+
+import java.net.URI
 
 class UserSpec extends AnyFunSpec with Matchers with OptionValues {
 
@@ -54,7 +55,8 @@ class UserSpec extends AnyFunSpec with Matchers with OptionValues {
       enterprise.manager.value should be(UserRef(
         value = "26118915-6090-4610-87e4-49d8ca9f808d",
         $ref = Some("../Users/26118915-6090-4610-87e4-49d8ca9f808d"),
-        displayName = Some("John Smith")))
+        displayName = Some("John Smith"),
+      ))
     }
 
     it("should serialize roundtrip to json without changing") {

@@ -1,16 +1,21 @@
 package scim.rest
 
-import java.net.URI
-import cats._
+import cats.*
 import io.circe.parser.parse
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.OptionValues
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.{BeforeAndAfterEach, OptionValues}
-import scim.model.Codecs._
-import scim.model.{Group, ListResponse, User}
-import scim.rest.MockStore.{MockOptimizedGroupStore, MockUserStore}
+import scim.model.Codecs.*
+import scim.model.Group
+import scim.model.ListResponse
+import scim.model.User
+import scim.rest.MockStore.MockOptimizedGroupStore
+import scim.rest.MockStore.MockUserStore
 import scim.rest.Resource.Path
-import scim.rest.TestHelpers._
+import scim.rest.TestHelpers.*
+
+import java.net.URI
 
 /** Simulates calls as done by OneLogin as of 2020-03-21. */
 class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with BeforeAndAfterEach {
@@ -29,14 +34,32 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
   }
 
   describe("client OneLogin") {
-    val user1 = User(User.Root(userName = "hans.mueller", id = Some("a-id-1"),
-      meta = Some(User.userMeta("a-id-1").resolveLocation(base))))
-    val user1b = User(User.Root(userName = "hans.mueller", id = user1.id, displayName = Some("Mülli"),
-      meta = Some(User.userMeta("a-id-1").resolveLocation(base))))
-    val user2 = User(User.Root(userName = "peter.meier", id = Some("a-id-2"),
-      meta = Some(User.userMeta("a-id-1").resolveLocation(base))))
-    val group1 = Group(Group.Root(displayName = "Group A", id = Some("g-a"), meta = Some(Group.groupMeta("g-a").resolveLocation(base))))
-    val group2 = Group(Group.Root(displayName = "Group B", id = Some("g-b"), meta = Some(Group.groupMeta("g-b").resolveLocation(base))))
+    val user1 = User(User.Root(
+      userName = "hans.mueller",
+      id = Some("a-id-1"),
+      meta = Some(User.userMeta("a-id-1").resolveLocation(base)),
+    ))
+    val user1b = User(User.Root(
+      userName = "hans.mueller",
+      id = user1.id,
+      displayName = Some("Mülli"),
+      meta = Some(User.userMeta("a-id-1").resolveLocation(base)),
+    ))
+    val user2 = User(User.Root(
+      userName = "peter.meier",
+      id = Some("a-id-2"),
+      meta = Some(User.userMeta("a-id-1").resolveLocation(base)),
+    ))
+    val group1 = Group(Group.Root(
+      displayName = "Group A",
+      id = Some("g-a"),
+      meta = Some(Group.groupMeta("g-a").resolveLocation(base)),
+    ))
+    val group2 = Group(Group.Root(
+      displayName = "Group B",
+      id = Some("g-b"),
+      meta = Some(Group.groupMeta("g-b").resolveLocation(base)),
+    ))
 
     it("should activate") {
       Users.content = Seq(user1, user2)
@@ -72,11 +95,15 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       r1.body.value.as[ListResponse].value.totalResults should be(0)
 
       // Create the user
-      val r2 = api.user.post(root, Map.empty,
+      val r2 = api.user.post(
+        root,
+        Map.empty,
         body = parse(
           """{"userName":"peter.meier@example.com","name":{"givenName":"Peter","familyName":"Meier"},
             |"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"emails":[{"primary":true,"type":"work","value":"pm@example.com"}],
-            |"active":true}""".stripMargin).value)
+            |"active":true}""".stripMargin
+        ).value,
+      )
       if r2.status != 204 then {
         r2.status should be(200)
         val user = r2.body.value.as[User].value
@@ -91,17 +118,21 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       Users.content = Seq.empty
       Groups.content = Seq(group1)
 
-      //Check if user exists
+      // Check if user exists
       val r1 = api.user.get(root, Map("filter" -> "userName eq \"hans.mueller\""))
       r1.status should be(200)
       r1.body.value.as[ListResponse].value.totalResults should be(0)
 
       // Create the user
-      val r2 = api.user.post(root, Map.empty,
+      val r2 = api.user.post(
+        root,
+        Map.empty,
         body = parse(
           """{"userName":"peter.meier@example.com","name":{"givenName":"Peter","familyName":"Meier"},
             |"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"emails":[{"primary":true,"type":"work","value":"pm@example.com"}],
-            |"active":true}""".stripMargin).value)
+            |"active":true}""".stripMargin
+        ).value,
+      )
       r2.status should be(200)
       val user = r2.body.value.as[User].value
       user.id.isDefined should be(true)
@@ -110,28 +141,35 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       Users.content.head.rootOrDefault.userName should be("peter.meier@example.com")
       val uid = user.id.value
 
-      //Look for groups
+      // Look for groups
       val r3 = api.group.get(root, Map("count" -> "100", "startIndex" -> "1"))
       r3.status should be(200)
       val lr = r3.body.value.as[ListResponse].value
       lr.totalResults should be(1)
       lr.Resources.value.head.as[Group].value should be(group1)
 
-      //Create missing group
-      val r4 = api.group.post(root, Map.empty,
-        body = parse("""{"displayName":"Group C","schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"]}""").value)
+      // Create missing group
+      val r4 = api.group.post(
+        root,
+        Map.empty,
+        body = parse("""{"displayName":"Group C","schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"]}""").value,
+      )
       r4.status should be(200)
       val gc = r4.body.value.as[Group].value
       gc.id.isDefined should be(true)
       val gcId = gc.id.value
       gc.rootOrDefault.displayName should be("Group C")
 
-      //Add user to group 1
-      val r5 = api.group.patch(Seq("g-a"), Map.empty,
+      // Add user to group 1
+      val r5 = api.group.patch(
+        Seq("g-a"),
+        Map.empty,
         body = parse(
           s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"$uid"}],"op":"add",
-             |"path":"members"}]}""".stripMargin)
-          .value)
+             |"path":"members"}]}""".stripMargin
+        )
+          .value,
+      )
       if r5.status != 204 then {
         r5.status should be(200)
         val g1 = r5.body.value.as[Group].value
@@ -140,12 +178,16 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
         g1.rootOrDefault.members.value.head.value should be(uid)
       }
 
-      //Add user to group 2
-      val r6 = api.group.patch(Seq(gcId), Map.empty,
+      // Add user to group 2
+      val r6 = api.group.patch(
+        Seq(gcId),
+        Map.empty,
         body = parse(
           s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"$uid"}],"op":"add",
-             |"path":"members"}]}""".stripMargin)
-          .value)
+             |"path":"members"}]}""".stripMargin
+        )
+          .value,
+      )
       if r6.status != 204 then {
         r6.status should be(200)
         val g2 = r6.body.value.as[Group].value
@@ -183,19 +225,23 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       r1.status should be(200)
       r1.body.value.as[User].value should be(user1)
 
-      //Look for groups
+      // Look for groups
       val r2 = api.group.get(root, Map("count" -> "100", "startIndex" -> "1"))
       r2.status should be(200)
       val lr = r2.body.value.as[ListResponse].value
       lr.totalResults should be(1)
       lr.Resources.value.head.as[Group].value should be(group1)
 
-      //Add user to group
-      val r3 = api.group.patch(Seq("g-a"), Map.empty,
+      // Add user to group
+      val r3 = api.group.patch(
+        Seq("g-a"),
+        Map.empty,
         body = parse(
           """{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"a-id-1"}],"op":"add",
-            |"path":"members"}]}""".stripMargin)
-          .value)
+            |"path":"members"}]}""".stripMargin
+        )
+          .value,
+      )
       if r3.status != 204 then {
         r3.status should be(200)
         val g = r3.body.value.as[Group].value
@@ -220,28 +266,35 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       r1.status should be(200)
       r1.body.value.as[User].value should be(user1)
 
-      //Look for groups
+      // Look for groups
       val r2 = api.group.get(root, Map("count" -> "100", "startIndex" -> "1"))
       r2.status should be(200)
       val lr = r2.body.value.as[ListResponse].value
       lr.totalResults should be(1)
       lr.Resources.value.head.as[Group].value should be(group1)
 
-      //Create group
-      val r3 = api.group.post(root, Map.empty,
-        body = parse("""{"displayName":"Group C","schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"]}""").value)
+      // Create group
+      val r3 = api.group.post(
+        root,
+        Map.empty,
+        body = parse("""{"displayName":"Group C","schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"]}""").value,
+      )
       r3.status should be(200)
       val gc = r3.body.value.as[Group].value
       gc.id.isDefined should be(true)
       val gcId = gc.id.value
       gc.rootOrDefault.displayName should be("Group C")
 
-      //Add user to group
-      val r4 = api.group.patch(Seq(gcId), Map.empty,
+      // Add user to group
+      val r4 = api.group.patch(
+        Seq(gcId),
+        Map.empty,
         body = parse(
           """{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"a-id-1"}],"op":"add",
-            |"path":"members"}]}""".stripMargin)
-          .value)
+            |"path":"members"}]}""".stripMargin
+        )
+          .value,
+      )
       if r4.status != 204 then {
         r4.status should be(200)
         val g = r4.body.value.as[Group].value
@@ -259,21 +312,29 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
 
     it("should deactivate user") {
       Users.content = Seq(user1)
-      Groups.content = Seq(Group(group1.rootOrDefault.copy(members = Some(Seq(Group.Member(user1.id.get), Group.Member(user2.id.get))))))
+      Groups.content =
+        Seq(Group(group1.rootOrDefault.copy(members = Some(Seq(Group.Member(user1.id.get), Group.Member(user2.id.get))))))
 
       // Remove user from group
-      val r1 = api.group.patch(Seq("g-a"), Map.empty,
+      val r1 = api.group.patch(
+        Seq("g-a"),
+        Map.empty,
         body = parse(
           s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-             |"Operations":[{"value":[{"value":"${user1.id.get}"}],"op":"remove","path":"members"}]}""".stripMargin).value)
+             |"Operations":[{"value":[{"value":"${user1.id.get}"}],"op":"remove","path":"members"}]}""".stripMargin
+        ).value,
+      )
       if r1.status != 204 then {
         r1.status should be(200)
         Group(r1.body.value).rootOrDefault.members should be(None)
       }
 
-      //Set user to inactive
-      val r2 = api.user.put(Seq(user1.id.get), Map.empty,
-        body = User(user1.rootOrDefault.copy(active = Some(false))).asJson(base))
+      // Set user to inactive
+      val r2 = api.user.put(
+        Seq(user1.id.get),
+        Map.empty,
+        body = User(user1.rootOrDefault.copy(active = Some(false))).asJson(base),
+      )
       r2.status should be(200)
       User(r2.body.value).rootOrDefault.active should be(Some(false))
 
@@ -288,16 +349,20 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       Groups.content = Seq(Group(group1.rootOrDefault.copy(members = Some(Seq(Group.Member(user1.id.get))))))
 
       // Remove user from group
-      val r1 = api.group.patch(Seq("g-a"), Map.empty,
+      val r1 = api.group.patch(
+        Seq("g-a"),
+        Map.empty,
         body = parse(
           s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-             |"Operations":[{"value":[{"value":"${user1.id.get}"}],"op":"remove","path":"members"}]}""".stripMargin).value)
+             |"Operations":[{"value":[{"value":"${user1.id.get}"}],"op":"remove","path":"members"}]}""".stripMargin
+        ).value,
+      )
       if r1.status != 204 then {
         r1.status should be(200)
         Group(r1.body.value).rootOrDefault.members should be(None)
       }
 
-      //Delete user (guessed)
+      // Delete user (guessed)
       val r2 = api.user.delete(Seq(user1.id.get), Map.empty)
       r2.status should be(204)
 

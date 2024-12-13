@@ -1,10 +1,11 @@
 package scim.model
 
-import java.net.URI
 import io.circe.Json
 import org.scalatest.OptionValues
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
+
+import java.net.URI
 
 class GroupSpec extends AnyFunSpec with Matchers with OptionValues {
 
