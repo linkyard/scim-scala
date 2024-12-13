@@ -17,7 +17,7 @@ import java.util.Locale
 import scala.util.Try
 
 object Codecs {
-  given Decoder[Locale] = Decoder.decodeString.map(v => new Locale(v))
+  given Decoder[Locale] = Decoder.decodeString.map(Locale.forLanguageTag)
   given Encoder[Locale] = Encoder.encodeString.contramap(_.toString)
   given Decoder[URI] =
     Decoder.decodeString.emap(v => Try(URI.create(v)).toEither.left.map(_ => s"$v is not a valid URI"))

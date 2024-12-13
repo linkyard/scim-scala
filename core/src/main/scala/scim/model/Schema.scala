@@ -3,12 +3,11 @@ package scim.model
 import java.net.URI
 import scala.util.Try
 
-case class Schema(uri: URI) {
+case class Schema(uri: URI):
   def asString: String = uri.toString
   override def toString: String = asString
-}
 
-object Schema {
+object Schema:
   def apply(uri: String): Schema = Schema(URI.create(uri))
   def parse(uri: String): Either[String, Schema] = Try(URI.create(uri)).toEither
     .map(Schema.apply).left.map(_ => s"$uri is not a valid schema")
@@ -25,4 +24,3 @@ object Schema {
   val PatchOp: Schema = Schema("urn:ietf:params:scim:api:messages:2.0:PatchOp")
   val ResourceType: Schema = Schema("urn:ietf:params:scim:schemas:core:2.0:ResourceType")
   val Error: Schema = Schema("urn:ietf:params:scim:api:messages:2.0:Error")
-}

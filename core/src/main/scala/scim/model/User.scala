@@ -1,6 +1,5 @@
 package scim.model
 
-import com.typesafe.scalalogging.LazyLogging
 import io.circe.Decoder.Result
 import io.circe.Json
 import io.circe.generic.auto.*
@@ -13,7 +12,7 @@ import java.net.URLEncoder
 import java.time.Instant
 import java.util.Locale
 
-case class User(json: Json) extends ExtensibleModel[Root] with LazyLogging {
+case class User(json: Json) extends ExtensibleModel[Root]:
   def schema: Schema = Schema.User
   lazy val root: Result[Root] = json.as[Root]
   def rootOrDefault: Root = root.toOption.getOrElse(Root.fallback)
@@ -22,12 +21,12 @@ case class User(json: Json) extends ExtensibleModel[Root] with LazyLogging {
     root.toOption.map(root => root.metaOrDefault.resolveLocation(base))
       .fold(json)(meta => json.deepMerge(Json.obj("meta" -> meta.asJson)))
       .deepDropNullValues
+
   override def meta: Meta = rootOrDefault.metaOrDefault
 
   def ++(other: Json): User = User(json.deepMerge(other))
-}
 
-object User {
+object User:
   def apply(root: Root): User = User(root.asJson.deepDropNullValues)
 
   def userMeta(
@@ -70,13 +69,11 @@ object User {
     roles: Option[Seq[String]] = None,
     x509Certificates: Option[Seq[SimpleValue]] = None,
     `urn:ietf:params:scim:schemas:extension:enterprise:2.0:User`: Option[EnterpriseUser] = None,
-  ) {
+  ):
     def enterprise: Option[EnterpriseUser] = `urn:ietf:params:scim:schemas:extension:enterprise:2.0:User`
     def metaOrDefault: Meta = userMeta(id.getOrElse(userName))
-  }
-  object Root {
+  object Root:
     private[User] val fallback = Root(id = None, userName = "")
-  }
 
   case class Name(
     formatted: Option[String] = None,
@@ -109,15 +106,12 @@ object User {
     value: String,
     `$ref`: Option[String],
     displayName: Option[String],
-  ) {
+  ):
     def ref: Option[String] = $ref
-  }
   case class GroupRef(
     value: String,
     `$ref`: Option[String],
     display: Option[String],
     `type`: Option[String],
-  ) {
+  ):
     def ref: Option[String] = $ref
-  }
-}

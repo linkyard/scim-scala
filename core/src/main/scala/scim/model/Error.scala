@@ -7,5 +7,3 @@ case class Error(
   scimType: Option[String] = None,
   schemas: Seq[Schema] = Seq(Schema.Error),
 ) extends RootModel
-
-object Error {}

@@ -10,10 +10,8 @@ case class Meta(
   created: Option[Instant] = None,
   lastModified: Option[Instant] = None,
   version: Option[String] = None,
-) {
-  def resolveLocation(base: URI): Meta =
-    this.copy(
-      location = location.orElse(locationRelative.map(base.toString + _).map(URI.create)),
-      locationRelative = None,
-    )
-}
+):
+  def resolveLocation(base: URI): Meta = copy(
+    location = location.orElse(locationRelative.map(base.toString + _).map(URI.create)),
+    locationRelative = None,
+  )

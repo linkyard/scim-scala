@@ -5,19 +5,16 @@ import io.circe.Json
 
 import java.net.URI
 
-trait Model
+sealed trait Model
 
-trait JsonModel extends Model {
+trait JsonModel extends Model:
   def asJson(base: URI): Json
   def meta: Meta
-}
 
-trait RootModel extends Model {
+trait RootModel extends Model:
   def schemas: Seq[Schema]
-}
 
-trait ExtensibleModel[Root] extends Model with JsonModel {
-
+trait ExtensibleModel[Root] extends Model with JsonModel:
   /** full/canonical representation */
   val json: Json
 
@@ -27,4 +24,3 @@ trait ExtensibleModel[Root] extends Model with JsonModel {
   /** parsed representation */
   def root: Either[DecodingFailure, Root]
   def rootOrDefault: Root
-}
