@@ -14,7 +14,7 @@ case class Meta(
   def resolveLocation(base: URI): Meta = {
     this.copy(
       location = location.orElse(locationRelative.map(base.toString + _).map(URI.create)),
-      locationRelative = None
+      locationRelative = None,
     )
   }
 }

@@ -1,7 +1,9 @@
 package scim.model
 
+import io.circe.DecodingFailure
+import io.circe.Json
+
 import java.net.URI
-import io.circe.{DecodingFailure, Json}
 
 trait Model
 
@@ -15,6 +17,7 @@ trait RootModel extends Model {
 }
 
 trait ExtensibleModel[Root] extends Model with JsonModel {
+
   /** full/canonical representation */
   val json: Json
 

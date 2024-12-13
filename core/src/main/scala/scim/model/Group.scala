@@ -1,14 +1,16 @@
 package scim.model
 
-import java.net.{URI, URLEncoder}
-import java.time.Instant
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.Decoder.Result
 import io.circe.Json
-import io.circe.generic.auto._
-import io.circe.syntax._
+import io.circe.generic.auto.*
+import io.circe.syntax.*
+import scim.model.Codecs.*
 import scim.model.Group.Root
-import Codecs._
+
+import java.net.URI
+import java.net.URLEncoder
+import java.time.Instant
 
 case class Group(json: Json) extends ExtensibleModel[Root] with LazyLogging {
   def schema: Schema = Schema.Group
@@ -28,16 +30,27 @@ case class Group(json: Json) extends ExtensibleModel[Root] with LazyLogging {
 object Group {
   def apply(root: Root): Group = Group(root.asJson.deepDropNullValues)
 
-  def groupMeta(id: String, created: Option[Instant] = None, lastModified: Option[Instant] = None, version: Option[String] = None): Meta = {
+  def groupMeta(
+    id: String,
+    created: Option[Instant] = None,
+    lastModified: Option[Instant] = None,
+    version: Option[String] = None,
+  ): Meta = {
     val name = URLEncoder.encode(id, "UTF-8")
-    Meta("Group", locationRelative = Some(s"/Groups/$name"), created = created, lastModified = lastModified, version = version)
+    Meta(
+      "Group",
+      locationRelative = Some(s"/Groups/$name"),
+      created = created,
+      lastModified = lastModified,
+      version = version,
+    )
   }
 
   case class Root(
     id: Option[String],
     displayName: String,
     members: Option[Seq[Member]] = None,
-    meta: Option[Meta] = None
+    meta: Option[Meta] = None,
   ) {
     def metaOrDefault: Meta = groupMeta(id.getOrElse(""))
   }
@@ -52,4 +65,3 @@ object Group {
     def id: String = value
   }
 }
-

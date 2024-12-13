@@ -15,9 +15,8 @@ lazy val root = (project in file("."))
       Global / onChangedBuildSource := ReloadOnSourceChanges,
       semanticdbEnabled := true,
       semanticdbVersion := scalafixSemanticdb.revision,
-      scalacOptions += "-source:3.0-migration",
+      scalacOptions += "-source:3.5",
       scalacOptions += "-new-syntax",
-      scalacOptions += "-rewrite",
       scalacOptions += "-feature",
       scalacOptions += "-unchecked",
       scalacOptions += "-deprecation",
@@ -39,6 +38,7 @@ lazy val root = (project in file("."))
         "org.scalatest" %% "scalatest" % Dependencies.scalatest % Test,
         "org.scalacheck" %% "scalacheck" % Dependencies.scalacheck % Test,
         "org.scalatestplus" %% "scalacheck-1-16" % Dependencies.scalatestScalacheck % Test,
+        "io.github.martinhh" %% "scalacheck-derived" % "0.5.0"
       ),
       libraryDependencies ++= Dependencies.logBinding.map(_ % Test),
     )))

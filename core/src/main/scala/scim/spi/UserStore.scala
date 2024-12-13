@@ -1,7 +1,8 @@
 package scim.spi
 
-import scim.model.{Filter, User}
-import scim.spi.SpiError._
+import scim.model.Filter
+import scim.model.User
+import scim.spi.SpiError.*
 
 trait UserStore[F[_]] {
   def get(id: String): F[Either[DoesNotExist, User]]

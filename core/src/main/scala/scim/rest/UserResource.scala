@@ -2,12 +2,14 @@ package scim.rest
 
 import cats.Monad
 import io.circe.Json
-import scim.model.Codecs._
-import scim.model._
-import scim.rest.Resource.{Path, QueryParams}
+import scim.model.*
+import scim.model.Codecs.*
+import scim.rest.Resource.Path
+import scim.rest.Resource.QueryParams
 import scim.spi.UserStore
 
-private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore[F], monad: Monad[F]) extends Resource[F] {
+private class UserResource[F[_]](urlConfig: UrlConfig)(implicit store: UserStore[F], monad: Monad[F])
+    extends Resource[F] {
   private def pure[A]: A => F[A] = monad.pure
 
   override def get(subPath: Path, queryParams: QueryParams): F[Response] = {

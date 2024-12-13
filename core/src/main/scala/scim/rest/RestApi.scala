@@ -1,16 +1,27 @@
 package scim.rest
 
 import cats.Monad
-import scim.model.{ResourceType, SchemaDefinition, ServiceProviderConfiguration}
-import scim.model.ServiceProviderConfiguration.{AuthenticationOptions, BulkOptions, FilterOptions, OptionSupported}
-import scim.spi.{GroupStore, UserStore}
+import scim.model.ResourceType
+import scim.model.SchemaDefinition
+import scim.model.ServiceProviderConfiguration
+import scim.model.ServiceProviderConfiguration.AuthenticationOptions
+import scim.model.ServiceProviderConfiguration.BulkOptions
+import scim.model.ServiceProviderConfiguration.FilterOptions
+import scim.model.ServiceProviderConfiguration.OptionSupported
+import scim.spi.GroupStore
+import scim.spi.UserStore
 
-class RestApi[F[_]] private(
+class RestApi[F[_]] private (
   config: ServiceProviderConfiguration,
   urlConfig: UrlConfig,
   _resourceTypes: Iterable[ResourceType],
-  schemaDefinitions: Iterable[SchemaDefinition])(
-  implicit monad: Monad[F], userStore: UserStore[F], groupStore: GroupStore[F]) {
+  schemaDefinitions: Iterable[SchemaDefinition],
+)(
+  implicit
+  monad: Monad[F],
+  userStore: UserStore[F],
+  groupStore: GroupStore[F],
+) {
   def user: Resource[F] = new UserResource[F](urlConfig)
   def group: Resource[F] = new GroupResource[F](urlConfig)
   def resourceTypes: Resource[F] = new ResourceTypeResource[F](urlConfig, _resourceTypes)
@@ -21,11 +32,12 @@ class RestApi[F[_]] private(
 }
 
 object RestApi {
-  def apply[F[_] : Monad : UserStore : GroupStore](
+  def apply[F[_]: Monad: UserStore: GroupStore](
     urlConfig: UrlConfig,
     config: ServiceProviderConfiguration = defaultConfig,
     resourceTypes: Iterable[ResourceType] = defaultResourceTypes,
-    schemaDefinitions: Iterable[SchemaDefinition] = SchemaDefinition.defaultSchemas): RestApi[F] = {
+    schemaDefinitions: Iterable[SchemaDefinition] = SchemaDefinition.defaultSchemas,
+  ): RestApi[F] = {
     new RestApi[F](config, urlConfig, resourceTypes, schemaDefinitions)
   }
 
@@ -40,7 +52,7 @@ object RestApi {
       `type` = "oauthbearertoken",
       name = "Bearer Token",
       description = "Bearer Token authentication in HTTP Authorization header",
-    ))
+    )),
   )
 
   val defaultResourceTypes: Iterable[ResourceType] = Seq(ResourceType.UserResourceType, ResourceType.GroupResourceType)

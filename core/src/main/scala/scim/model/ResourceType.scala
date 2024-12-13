@@ -1,10 +1,11 @@
 package scim.model
 
-import java.net.URI
 import io.circe.Json
-import io.circe.syntax._
-import Codecs._
+import io.circe.syntax.*
+import scim.model.Codecs.*
 import scim.model.ResourceType.SchemaExtension
+
+import java.net.URI
 
 /** RFC 7643 chapter 6 */
 case class ResourceType(
@@ -25,11 +26,17 @@ object ResourceType {
   case class SchemaExtension(schema: Schema, required: Boolean)
 
   object UserResourceType extends ResourceType(
-    id = "User", endpoint = "/Users",
-    name = "User", description = "User Account",
-    schema = Schema.User)
+        id = "User",
+        endpoint = "/Users",
+        name = "User",
+        description = "User Account",
+        schema = Schema.User,
+      )
   object GroupResourceType extends ResourceType(
-    id = "Group", endpoint = "/Groups",
-    name = "Group", description = "Group",
-    schema = Schema.Group)
+        id = "Group",
+        endpoint = "/Groups",
+        name = "Group",
+        description = "Group",
+        schema = Schema.Group,
+      )
 }

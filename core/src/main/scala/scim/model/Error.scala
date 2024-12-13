@@ -5,8 +5,7 @@ case class Error(
   status: Int,
   detail: Option[String],
   scimType: Option[String] = None,
-  schemas: Seq[Schema] = Seq(Schema.Error)) extends RootModel
+  schemas: Seq[Schema] = Seq(Schema.Error),
+) extends RootModel
 
-object Error {
-
-}
+object Error {}

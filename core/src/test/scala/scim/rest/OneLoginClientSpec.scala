@@ -77,7 +77,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
           """{"userName":"peter.meier@example.com","name":{"givenName":"Peter","familyName":"Meier"},
             |"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"emails":[{"primary":true,"type":"work","value":"pm@example.com"}],
             |"active":true}""".stripMargin).value)
-      if (r2.status != 204) {
+      if r2.status != 204 then {
         r2.status should be(200)
         val user = r2.body.value.as[User].value
         user.id.isDefined should be(true)
@@ -132,7 +132,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
           s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"$uid"}],"op":"add",
              |"path":"members"}]}""".stripMargin)
           .value)
-      if (r5.status != 204) {
+      if r5.status != 204 then {
         r5.status should be(200)
         val g1 = r5.body.value.as[Group].value
         g1.id should be(group1.id)
@@ -146,7 +146,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
           s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"$uid"}],"op":"add",
              |"path":"members"}]}""".stripMargin)
           .value)
-      if (r6.status != 204) {
+      if r6.status != 204 then {
         r6.status should be(200)
         val g2 = r6.body.value.as[Group].value
         g2.id should be(gc.id)
@@ -196,7 +196,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
           """{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"a-id-1"}],"op":"add",
             |"path":"members"}]}""".stripMargin)
           .value)
-      if (r3.status != 204) {
+      if r3.status != 204 then {
         r3.status should be(200)
         val g = r3.body.value.as[Group].value
         g.id should be(group1.id)
@@ -242,7 +242,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
           """{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"value":[{"value":"a-id-1"}],"op":"add",
             |"path":"members"}]}""".stripMargin)
           .value)
-      if (r4.status != 204) {
+      if r4.status != 204 then {
         r4.status should be(200)
         val g = r4.body.value.as[Group].value
         g.id should be(gc.id)
@@ -266,7 +266,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
         body = parse(
           s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
              |"Operations":[{"value":[{"value":"${user1.id.get}"}],"op":"remove","path":"members"}]}""".stripMargin).value)
-      if (r1.status != 204) {
+      if r1.status != 204 then {
         r1.status should be(200)
         Group(r1.body.value).rootOrDefault.members should be(None)
       }
@@ -292,7 +292,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
         body = parse(
           s"""{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
              |"Operations":[{"value":[{"value":"${user1.id.get}"}],"op":"remove","path":"members"}]}""".stripMargin).value)
-      if (r1.status != 204) {
+      if r1.status != 204 then {
         r1.status should be(200)
         Group(r1.body.value).rootOrDefault.members should be(None)
       }
@@ -322,7 +322,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
         lr.itemsPerPage.value should be(pageSize)
         lr.totalResults should be(count)
         val es = lr.Resources.value.map(User.apply)
-        if (start + es.size < lr.totalResults) es ++ getThem(start + es.size, pageSize)
+        if start + es.size < lr.totalResults then es ++ getThem(start + es.size, pageSize)
         else es
       }
 

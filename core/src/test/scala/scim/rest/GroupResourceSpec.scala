@@ -52,7 +52,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
               |}
               |""".stripMargin).value
         )
-        if (r.status == 200) {
+        if r.status == 200 then {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
           Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(id = Some("g1"), displayName = "Group 1",
@@ -88,7 +88,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
               |}
               |""".stripMargin).value
         )
-        if (r.status == 200) {
+        if r.status == 200 then {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
           Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(id = Some("g1"), displayName = "Group 1", members = Some(Seq(Member("u-1"),
@@ -121,7 +121,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
               |}
               |""".stripMargin).value
         )
-        if (r.status == 200) {
+        if r.status == 200 then {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
           Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(id = Some("g1"), displayName = "Group 1",
@@ -153,7 +153,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
               |}
               |""".stripMargin).value
         )
-        if (r.status == 200) {
+        if r.status == 200 then {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
           Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(id = Some("g1"), displayName = "Group 1",
@@ -184,7 +184,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
               |}
               |""".stripMargin).value
         )
-        if (r.status == 200) {
+        if r.status == 200 then {
           r.status should be(200)
           Group(r.body.value).id.value should be("g1")
           Group(r.body.value).rootOrDefault.copy(meta = None) should be(Group.Root(id = Some("g1"), displayName = "Group 1",

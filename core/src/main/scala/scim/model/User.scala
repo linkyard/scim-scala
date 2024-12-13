@@ -1,15 +1,17 @@
 package scim.model
 
-import java.net.{URI, URLEncoder}
-import java.time.Instant
-import java.util.Locale
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.Decoder.Result
 import io.circe.Json
-import io.circe.generic.auto._
-import io.circe.syntax._
+import io.circe.generic.auto.*
+import io.circe.syntax.*
+import scim.model.Codecs.*
 import scim.model.User.Root
-import Codecs._
+
+import java.net.URI
+import java.net.URLEncoder
+import java.time.Instant
+import java.util.Locale
 
 case class User(json: Json) extends ExtensibleModel[Root] with LazyLogging {
   def schema: Schema = Schema.User
@@ -29,9 +31,20 @@ case class User(json: Json) extends ExtensibleModel[Root] with LazyLogging {
 object User {
   def apply(root: Root): User = User(root.asJson.deepDropNullValues)
 
-  def userMeta(id: String, created: Option[Instant] = None, lastModified: Option[Instant] = None, version: Option[String] = None): Meta = {
+  def userMeta(
+    id: String,
+    created: Option[Instant] = None,
+    lastModified: Option[Instant] = None,
+    version: Option[String] = None,
+  ): Meta = {
     val name = URLEncoder.encode(id, "UTF-8")
-    Meta("User", locationRelative = Some(s"/Users/$name"), created = created, lastModified = lastModified, version = version)
+    Meta(
+      "User",
+      locationRelative = Some(s"/Users/$name"),
+      created = created,
+      lastModified = lastModified,
+      version = version,
+    )
   }
 
   case class Root(
@@ -57,7 +70,7 @@ object User {
     entitlements: Option[Seq[String]] = None,
     roles: Option[Seq[String]] = None,
     x509Certificates: Option[Seq[SimpleValue]] = None,
-    `urn:ietf:params:scim:schemas:extension:enterprise:2.0:User`: Option[EnterpriseUser] = None
+    `urn:ietf:params:scim:schemas:extension:enterprise:2.0:User`: Option[EnterpriseUser] = None,
   ) {
     def enterprise: Option[EnterpriseUser] = `urn:ietf:params:scim:schemas:extension:enterprise:2.0:User`
     def metaOrDefault: Meta = userMeta(id.getOrElse(userName))

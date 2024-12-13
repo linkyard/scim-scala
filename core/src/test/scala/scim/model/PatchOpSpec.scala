@@ -11,7 +11,7 @@ import org.scalatest.OptionValues
 
 class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValues {
   describe("PatchOp") {
-    it("should serialize/parse to same Json")(check { patch: PatchOp =>
+    it("should serialize/parse to same Json")(check { (patch: PatchOp) =>
       val json = patch.asJson
       val r = json.as[PatchOp]
       val reparsed = r.getOrElse(fail(s"could not parse: $r"))

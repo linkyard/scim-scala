@@ -10,7 +10,7 @@ import scim.spi.{GroupStore, Paging, SearchResult, Sorting, UserStore}
 import scim.spi.SpiError._
 
 /** Mutable store in the Id monad */
-trait MockStore[A <: ExtensibleModel[_]] {
+trait MockStore[A <: ExtensibleModel[?]] {
   var content: Seq[A] = Seq.empty
   protected def schema: Schema
   protected def duplicate(a: A, b: A): Boolean
@@ -45,7 +45,7 @@ trait MockStore[A <: ExtensibleModel[_]] {
 
   def delete(id: String) = {
     val after = content.filterNot(_.id.contains(id))
-    if (after.size == content.size) Left(DoesNotExist(id))
+    if after.size == content.size then Left(DoesNotExist(id))
     else {
       content = after
       Right(())

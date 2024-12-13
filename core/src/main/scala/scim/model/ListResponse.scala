@@ -9,5 +9,5 @@ case class ListResponse(
   startIndex: Option[Int],
   itemsPerPage: Option[Int],
   Resources: Option[Seq[Json]],
-
-  schemas: Seq[Schema] = Seq(Schema.ListResponse)) extends RootModel
+  schemas: Seq[Schema] = Seq(Schema.ListResponse),
+) extends RootModel

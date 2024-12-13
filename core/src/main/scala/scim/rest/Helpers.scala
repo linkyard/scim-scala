@@ -1,18 +1,43 @@
 package scim.rest
 
-import java.net.URI
-import cats.{Applicative, Monad}
-import scim.model.{ExtensibleModel, Filter, JsonModel, ListResponse, Meta, PatchOp, Schema, SearchRequest, SortOrder, User}
-import scim.rest.Resource.{Path, QueryParams}
-import cats.implicits._
-import io.circe.{Decoder, Encoder, Json}
-import io.circe.syntax._
-import scim.model.Codecs._
+import cats.Applicative
+import cats.Monad
+import cats.implicits.*
+import io.circe.Decoder
+import io.circe.Json
+import io.circe.syntax.*
+import scim.model.Codecs.*
+import scim.model.ExtensibleModel
+import scim.model.Filter
+import scim.model.Filter.AFilter
+import scim.model.Filter.AttributePath
+import scim.model.Filter.AttributeSelector
+import scim.model.Filter.Comparison
 import scim.model.Filter.Comparison.Equal
-import scim.model.Filter.{AFilter, AttributePath, AttributeSelector, Comparison, FilteredAttributePath, NoFilter, StringValue}
+import scim.model.Filter.FilteredAttributePath
+import scim.model.Filter.NoFilter
+import scim.model.Filter.StringValue
+import scim.model.JsonModel
+import scim.model.ListResponse
+import scim.model.PatchOp
 import scim.model.PatchOp.OperationType
-import scim.spi.{Paging, SearchResult, Sorting}
-import scim.spi.SpiError.{AlreadyExists, Conflict, CreationError, DoesNotExist, MalformedData, MissingData, UpdateError}
+import scim.model.Schema
+import scim.model.SearchRequest
+import scim.model.SortOrder
+import scim.rest.Resource.Path
+import scim.rest.Resource.QueryParams
+import scim.spi.Paging
+import scim.spi.SearchResult
+import scim.spi.Sorting
+import scim.spi.SpiError.AlreadyExists
+import scim.spi.SpiError.Conflict
+import scim.spi.SpiError.CreationError
+import scim.spi.SpiError.DoesNotExist
+import scim.spi.SpiError.MalformedData
+import scim.spi.SpiError.MissingData
+import scim.spi.SpiError.UpdateError
+
+import java.net.URI
 
 private object Helpers {
   type Id = String
@@ -20,7 +45,10 @@ private object Helpers {
   type QueryFun[F[_], A] = (Filter, Paging, Option[Sorting]) => F[SearchResult[A]]
 
   object Get {
-    def retrieve[F[_] : Applicative, A <: JsonModel](subPath: Path, base: URI)(get: Id => F[Either[DoesNotExist, A]]): Option[F[Response]] = {
+    def retrieve[F[_]: Applicative, A <: JsonModel](
+      subPath: Path,
+      base: URI,
+    )(get: Id => F[Either[DoesNotExist, A]]): Option[F[Response]] = {
       subpathToId(subPath).map { id =>
         get(id).map {
           case Right(r) =>
@@ -31,70 +59,87 @@ private object Helpers {
       }
     }
 
-    def search[F[_] : Applicative, A <: JsonModel](subPath: Path, queryParams: QueryParams, base: URI)(query: QueryFun[F, A]): Option[F[Response]] = {
-      if subpathToId(subPath).isEmpty then Some {
-        (for
-          filter <- queryParams.get("filter").traverse(Filter.parse)
-          sortBy = queryParams.get("sortBy").filter(_.nonEmpty)
-          sortOrder <- queryParams.get("sortOrder").traverse(SortOrder.parse)
-          startIndex <- queryParams.get("startIndex").traverse(IntValue.parse)
-          count <- queryParams.get("count").traverse(IntValue.parse)
-        yield SearchRequest(
-          filter = filter,
-          startIndex = startIndex,
-          count = count,
-          sortBy = sortBy,
-          sortOrder = sortOrder,
-          attributes = None,
-          excludedAttributes = None,
-        )).left.map(Response.malformedData)
-          .map(executeQueryRequest(query, base))
-          .fold(Applicative[F].pure, identity)
-      } else None
+    def search[F[_]: Applicative, A <: JsonModel](
+      subPath: Path,
+      queryParams: QueryParams,
+      base: URI,
+    )(query: QueryFun[F, A]): Option[F[Response]] = {
+      if subpathToId(subPath).isEmpty then
+        Some {
+          (for
+            filter <- queryParams.get("filter").traverse(Filter.parse)
+            sortBy = queryParams.get("sortBy").filter(_.nonEmpty)
+            sortOrder <- queryParams.get("sortOrder").traverse(SortOrder.parse)
+            startIndex <- queryParams.get("startIndex").traverse(IntValue.parse)
+            count <- queryParams.get("count").traverse(IntValue.parse)
+          yield SearchRequest(
+            filter = filter,
+            startIndex = startIndex,
+            count = count,
+            sortBy = sortBy,
+            sortOrder = sortOrder,
+            attributes = None,
+            excludedAttributes = None,
+          )).left.map(Response.malformedData)
+            .map(executeQueryRequest(query, base))
+            .fold(Applicative[F].pure, identity)
+        }
+      else None
     }
   }
 
   object Post {
-    def create[F[_] : Applicative, A <: ExtensibleModel[_] : Decoder](subPath: Path, body: Json, base: URI)(
-      create: A => F[Either[CreationError, A]]): Option[F[Response]] = {
-      if subPath.isEmpty then Some {
-        decodeBody[A](body)
-          .map(create)
-          .map(_.map {
-            case Right(created) =>
-              Response.ok(created, base)
-            case Left(AlreadyExists) =>
-              Response.alreadyExists
-            case Left(MalformedData(details)) =>
-              Response.malformedData(details)
-            case Left(MissingData(details)) =>
-              Response.missingValue(details)
-          })
-          .fold(Applicative[F].pure, identity)
-      } else None
-    }
-
-    def search[F[_] : Applicative, A <: JsonModel](subPath: Path, body: Json, base: URI)(query: QueryFun[F, A]): Option[F[Response]] = {
-      if subPath.headOption.contains(".search") then Some {
-        if subPath.size > 1 then Applicative[F].pure(Response.notFound)
-        else {
-          decodeBody[SearchRequest](body)
-            .map(executeQueryRequest(query, base))
+    def create[F[_]: Applicative, A <: ExtensibleModel[?]: Decoder](subPath: Path, body: Json, base: URI)(
+      create: A => F[Either[CreationError, A]]
+    ): Option[F[Response]] = {
+      if subPath.isEmpty then
+        Some {
+          decodeBody[A](body)
+            .map(create)
+            .map(_.map {
+              case Right(created) =>
+                Response.ok(created, base)
+              case Left(AlreadyExists) =>
+                Response.alreadyExists
+              case Left(MalformedData(details)) =>
+                Response.malformedData(details)
+              case Left(MissingData(details)) =>
+                Response.missingValue(details)
+            })
             .fold(Applicative[F].pure, identity)
         }
-      } else None
+      else None
+    }
+
+    def search[F[_]: Applicative, A <: JsonModel](
+      subPath: Path,
+      body: Json,
+      base: URI,
+    )(query: QueryFun[F, A]): Option[F[Response]] = {
+      if subPath.headOption.contains(".search") then
+        Some {
+          if subPath.size > 1 then Applicative[F].pure(Response.notFound)
+          else {
+            decodeBody[SearchRequest](body)
+              .map(executeQueryRequest(query, base))
+              .fold(Applicative[F].pure, identity)
+          }
+        }
+      else None
     }
   }
 
   object Put {
-    def update[F[_] : Applicative, A <: ExtensibleModel[_] : Decoder](subPath: Path, body: Json, base: URI)(
-      update: A => F[Either[UpdateError, A]]): Option[F[Response]] = {
+    def update[F[_]: Applicative, A <: ExtensibleModel[?]: Decoder](subPath: Path, body: Json, base: URI)(
+      update: A => F[Either[UpdateError, A]]
+    ): Option[F[Response]] = {
       subpathToId(subPath).map { id =>
         decodeBody[A](body)
           .flatMap(entity =>
             if entity.id.isEmpty then addId(entity.json, id).as[A].left.map(Response.decodingFailed)
             else if entity.id.contains(id) then Right(entity)
-            else Left(Response.conflict("id mismatch between body and url")))
+            else Left(Response.conflict("id mismatch between body and url"))
+          )
           .map(update)
           .map(_.map(handleUpdateResult(base)))
           .fold(Applicative[F].pure, identity)
@@ -109,10 +154,10 @@ private object Helpers {
   }
 
   object Delete {
-    def delete[F[_] : Applicative](subPath: Path)(delete: Id => F[Either[DoesNotExist, Unit]]): Option[F[Response]] = {
+    def delete[F[_]: Applicative](subPath: Path)(delete: Id => F[Either[DoesNotExist, Unit]]): Option[F[Response]] = {
       subpathToId(subPath).map { id =>
         delete(id).map {
-          case Right(()) => Response.noContent
+          case Right(())              => Response.noContent
           case Left(DoesNotExist(id)) => Response.notFound(id)
         }
       }
@@ -120,9 +165,12 @@ private object Helpers {
   }
 
   object Patch {
+
     /** gets the current state, patches that and updates all fields */
-    def patchViaJson[F[_] : Monad, E, A <: ExtensibleModel[_] : Decoder](subPath: Path, body: Json, base: URI)(
-      retrieve: Id => F[Either[DoesNotExist, A]], update: A => F[Either[UpdateError, A]]): Option[F[Response]] = {
+    def patchViaJson[F[_]: Monad, E, A <: ExtensibleModel[?]: Decoder](subPath: Path, body: Json, base: URI)(
+      retrieve: Id => F[Either[DoesNotExist, A]],
+      update: A => F[Either[UpdateError, A]],
+    ): Option[F[Response]] = {
       subpathToId(subPath).map { id =>
         decodeBody[PatchOp](body)
           .map { op =>
@@ -144,8 +192,11 @@ private object Helpers {
     type ArrayAddFun[F[_], M] = (String, Set[M]) => Option[F[Either[UpdateError, Unit]]]
     type ArrayRemoveFun[F[_]] = (String, Filter) => Option[F[Either[UpdateError, Unit]]]
 
-    def patchArrayAttribute[F[_] : Applicative, M: Decoder](subPath: Path, body: Json, url: Option[Id] => URI)(
-      attributeName: String, add: ArrayAddFun[F, M], remove: ArrayRemoveFun[F]): Option[F[Response]] = subpathToId(subPath).flatMap { id =>
+    def patchArrayAttribute[F[_]: Applicative, M: Decoder](subPath: Path, body: Json, url: Option[Id] => URI)(
+      attributeName: String,
+      add: ArrayAddFun[F, M],
+      remove: ArrayRemoveFun[F],
+    ): Option[F[Response]] = subpathToId(subPath).flatMap { id =>
       decodeBody[PatchOp](body).map { op =>
         def operationFor(op: PatchOp.Operation): Option[F[Either[UpdateError, Unit]]] = (op.path, op.op) match {
           case (Some(AttributePath(name, None, None)), OperationType.Add) if name == attributeName =>
@@ -167,30 +218,29 @@ private object Helpers {
           case _ => None
         }
 
-
         op.Operations.map(operationFor).toList match {
           case Some(op) :: Nil => Some(op.map {
-            case Right(()) => Response.noContent(url(Some(id)))
-            case Left(DoesNotExist(id)) => Response.notFound(id)
-            case Left(Conflict(details)) => Response.conflict(details)
-            case Left(MalformedData(details)) => Response.malformedData(details)
-            case Left(MissingData(details)) => Response.missingValue(details)
-          })
+              case Right(())                    => Response.noContent(url(Some(id)))
+              case Left(DoesNotExist(id))       => Response.notFound(id)
+              case Left(Conflict(details))      => Response.conflict(details)
+              case Left(MalformedData(details)) => Response.malformedData(details)
+              case Left(MissingData(details))   => Response.missingValue(details)
+            })
           case None :: Nil => None // unsupported operation
-          case a if a.length > 1 => None // multiple operations are not supported (since no transactions)
-          case Nil => Some(Applicative[F].pure(Response.noContent(url(Some(id))))) // nothing to update..
+          case Nil         => Some(Applicative[F].pure(Response.noContent(url(Some(id))))) // nothing to update..
+          case tooLong     => None // multiple operations are not supported (since no transactions)
         }
       }.fold(e => Some(Applicative[F].pure(e)), identity)
     }
   }
 
-  private def handleUpdateResult[A <: ExtensibleModel[_]](base: URI)(updateResult: Either[UpdateError, A]): Response = {
+  private def handleUpdateResult[A <: ExtensibleModel[?]](base: URI)(updateResult: Either[UpdateError, A]): Response = {
     updateResult match {
-      case Right(updated) => Response.ok(updated, base)
-      case Left(DoesNotExist(id)) => Response.notFound(id)
-      case Left(Conflict(details)) => Response.conflict(details)
+      case Right(updated)               => Response.ok(updated, base)
+      case Left(DoesNotExist(id))       => Response.notFound(id)
+      case Left(Conflict(details))      => Response.conflict(details)
       case Left(MalformedData(details)) => Response.malformedData(details)
-      case Left(MissingData(details)) => Response.missingValue(details)
+      case Left(MissingData(details))   => Response.missingValue(details)
     }
   }
 
@@ -200,9 +250,13 @@ private object Helpers {
   private def subpathToId(subPath: Path): Option[Id] =
     Some(subPath.mkString("/")).filter(_.nonEmpty)
 
-  private def executeQueryRequest[F[_] : Applicative, A <: JsonModel](query: QueryFun[F, A], base: URI)(request: SearchRequest) = {
+  private def executeQueryRequest[F[_]: Applicative, A <: JsonModel](
+    query: QueryFun[F, A],
+    base: URI,
+  )(request: SearchRequest) = {
     val filter = request.filter.getOrElse(NoFilter)
-    val paging = Paging(start = request.startIndex.map(_ - 1).map(_ max 0).getOrElse(0), maxResults = request.count.map(_ max 1))
+    val paging =
+      Paging(start = request.startIndex.map(_ - 1).map(_ max 0).getOrElse(0), maxResults = request.count.map(_ max 1))
     val sorting = request.sortBy.map(by => Sorting(by, request.sortOrder.getOrElse(SortOrder.default)))
     query(filter, paging, sorting)
       .map { result =>
@@ -210,7 +264,7 @@ private object Helpers {
           totalResults = result.totalCount,
           startIndex = Some(paging.start).filterNot(_ == 0).map(_ + 1),
           itemsPerPage = paging.maxResults,
-          Resources = Some(result.results.map(_.asJson(base))).filter(_.nonEmpty)
+          Resources = Some(result.results.map(_.asJson(base))).filter(_.nonEmpty),
         )
       }.map(body => Response.okJson(body.asJson))
   }

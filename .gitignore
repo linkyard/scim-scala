@@ -4,3 +4,6 @@ target
 .metals
 project/metals.sbt
 .bsp
+.bloop
+.vscode
+project/project

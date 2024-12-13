@@ -1,7 +1,8 @@
 package scim.rest
 
 import io.circe.Json
-import scim.rest.Resource.{Path, QueryParams}
+import scim.rest.Resource.Path
+import scim.rest.Resource.QueryParams
 
 trait Resource[F[_]] {
   def get(subPath: Path, queryParams: QueryParams): F[Response]

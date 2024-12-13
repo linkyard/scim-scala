@@ -1,6 +1,5 @@
 package scim.model
 
-
 /** RFC 7644 3.4.3 */
 case class SearchRequest(
   attributes: Option[Seq[String]],
@@ -12,5 +11,5 @@ case class SearchRequest(
   /** 1 based */
   startIndex: Option[Int],
   count: Option[Int],
-
-  schemas: Seq[Schema] = Seq(Schema.SearchRequest)) extends RootModel
+  schemas: Seq[Schema] = Seq(Schema.SearchRequest),
+) extends RootModel

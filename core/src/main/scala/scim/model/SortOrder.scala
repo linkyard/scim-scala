@@ -15,9 +15,9 @@ object SortOrder {
   def default: SortOrder = Ascending
 
   def parse(string: String): Either[String, SortOrder] = string.trim match {
-    case "ascending" => Right(Ascending)
+    case "ascending"  => Right(Ascending)
     case "descending" => Right(Descending)
-    case "" => Right(Ascending)
-    case other => Left(s"$other ist not a valid sortOrder")
+    case ""           => Right(Ascending)
+    case other        => Left(s"$other ist not a valid sortOrder")
   }
 }

@@ -1,10 +1,12 @@
 package scim.model
 
+import io.circe.Decoder
+import io.circe.Json
+import io.circe.optics.JsonPath
+import io.circe.optics.JsonPath.*
+
 import java.net.URI
 import scala.util.Try
-import io.circe.optics.{JsonFoldPath, JsonPath, JsonTraversalPath}
-import io.circe.{ACursor, Decoder, HCursor, Json, JsonNumber}
-import io.circe.optics.JsonPath._
 
 /** RFC 7644 - 3.4.2.2. */
 sealed trait Filter {
@@ -39,16 +41,16 @@ object Filter {
   case class And(a: AFilter, b: AFilter) extends LogicalOperation {
     def evaluate(on: Json, defaultSchema: Schema): Boolean =
       a.evaluate(on, defaultSchema) && b.evaluate(on, defaultSchema)
-    def render = s"${a.render} and ${b.render}"
+    def render: String = s"${a.render} and ${b.render}"
   }
   case class Or(a: AFilter, b: AFilter) extends LogicalOperation {
     def evaluate(on: Json, defaultSchema: Schema): Boolean =
       a.evaluate(on, defaultSchema) || b.evaluate(on, defaultSchema)
-    def render = s"${a.render} or ${b.render}"
+    def render: String = s"${a.render} or ${b.render}"
   }
   case class Not(a: AFilter) extends LogicalOperation {
     def evaluate(on: Json, defaultSchema: Schema): Boolean = !a.evaluate(on, defaultSchema)
-    def render = s"not (${a.render})"
+    def render: String = s"not (${a.render})"
   }
 
   sealed trait Comparison extends AFilter {
@@ -58,49 +60,49 @@ object Filter {
   object Comparison {
     case class Equal(attributePath: AttributePath, value: Value) extends Comparison {
       def evaluate(on: Json, defaultSchema: Schema): Boolean = value.isEqualTo(attributeValue(on, defaultSchema))
-      def render = s"${attributePath.render} eq ${value.render}"
+      def render: String = s"${attributePath.render} eq ${value.render}"
     }
     case class NotEqual(attributePath: AttributePath, value: Value) extends Comparison {
       def evaluate(on: Json, defaultSchema: Schema): Boolean = !value.isEqualTo(attributeValue(on, defaultSchema))
-      def render = s"${attributePath.render} ne ${value.render}"
+      def render: String = s"${attributePath.render} ne ${value.render}"
     }
     case class Contains(attributePath: AttributePath, value: Value) extends Comparison {
       def evaluate(on: Json, defaultSchema: Schema): Boolean = value.isContainedIn(attributeValue(on, defaultSchema))
-      def render = s"${attributePath.render} co ${value.render}"
+      def render: String = s"${attributePath.render} co ${value.render}"
     }
     case class StartsWith(attributePath: AttributePath, value: Value) extends Comparison {
       def evaluate(on: Json, defaultSchema: Schema): Boolean = value.isPrefixOf(attributeValue(on, defaultSchema))
-      def render = s"${attributePath.render} sw ${value.render}"
+      def render: String = s"${attributePath.render} sw ${value.render}"
     }
     case class EndsWith(attributePath: AttributePath, value: Value) extends Comparison {
       def evaluate(on: Json, defaultSchema: Schema): Boolean = value.isSuffixOf(attributeValue(on, defaultSchema))
-      def render = s"${attributePath.render} ew ${value.render}"
+      def render: String = s"${attributePath.render} ew ${value.render}"
     }
     case class Present(attributePath: AttributePath) extends Comparison {
       def evaluate(on: Json, defaultSchema: Schema): Boolean = !attributeValue(on, defaultSchema).isNull
-      def render = s"${attributePath.render} pr"
+      def render: String = s"${attributePath.render} pr"
     }
     case class GreaterThan(attributePath: AttributePath, value: Value) extends Comparison {
       def evaluate(on: Json, defaultSchema: Schema): Boolean = value.isLessThan(attributeValue(on, defaultSchema))
-      def render = s"${attributePath.render} gt ${value.render}"
+      def render: String = s"${attributePath.render} gt ${value.render}"
     }
     case class GreaterThanOrEqual(attributePath: AttributePath, value: Value) extends Comparison {
       def evaluate(on: Json, defaultSchema: Schema): Boolean = {
         val v = attributeValue(on, defaultSchema)
         value.isLessThan(v) || value.isEqualTo(v)
       }
-      def render = s"${attributePath.render} ge ${value.render}"
+      def render: String = s"${attributePath.render} ge ${value.render}"
     }
     case class LessThan(attributePath: AttributePath, value: Value) extends Comparison {
       def evaluate(on: Json, defaultSchema: Schema): Boolean = value.isGreaterThan(attributeValue(on, defaultSchema))
-      def render = s"${attributePath.render} lt ${value.render}"
+      def render: String = s"${attributePath.render} lt ${value.render}"
     }
     case class LessThanOrEqual(attributePath: AttributePath, value: Value) extends Comparison {
       def evaluate(on: Json, defaultSchema: Schema): Boolean = {
         val v = attributeValue(on, defaultSchema)
         value.isGreaterThan(v) || value.isEqualTo(v)
       }
-      def render = s"${attributePath.render} le ${value.render}"
+      def render: String = s"${attributePath.render} le ${value.render}"
     }
   }
 
@@ -110,7 +112,7 @@ object Filter {
       value.asArray.getOrElse(Vector(value))
         .exists(v => filter.evaluate(v, defaultSchema))
     }
-    def render = s"${attributePath.render}[${filter.render}]"
+    def render: String = s"${attributePath.render}[${filter.render}]"
   }
 
   sealed trait AttributeSelector {
@@ -130,7 +132,7 @@ object Filter {
           jsonNumber = _ => Json.Null,
           jsonString = _ => Json.Null,
           jsonObject = _.apply(sn).getOrElse(Json.Null),
-          jsonArray = a => Json.arr(a.map(_.asObject.flatMap(_.apply(sn)).getOrElse(Json.Null)): _*)
+          jsonArray = a => Json.arr(a.map(_.asObject.flatMap(_.apply(sn)).getOrElse(Json.Null))*),
         )
       case None => on
     }
@@ -138,7 +140,8 @@ object Filter {
     def render: String
   }
 
-  case class AttributePath(name: String, schema: Option[Schema] = None, subAttribute: Option[String] = None) extends AttributeSelector {
+  case class AttributePath(name: String, schema: Option[Schema] = None, subAttribute: Option[String] = None)
+      extends AttributeSelector {
     def extract(from: Json, defaultSchema: Schema): Json = {
       val value = basePath(defaultSchema).json.getOption(from).getOrElse(Json.Null)
       valueOrSubAttribute(value)
@@ -146,10 +149,15 @@ object Filter {
 
     def render: String = schema.map(_.asString + ":").getOrElse("") + name + subAttribute.map("." + _).getOrElse("")
   }
-  case class FilteredAttributePath(name: String, filter: AFilter, schema: Option[Schema] = None, subAttribute: Option[String] = None)
-    extends AttributeSelector {
+  case class FilteredAttributePath(
+    name: String,
+    filter: AFilter,
+    schema: Option[Schema] = None,
+    subAttribute: Option[String] = None,
+  ) extends AttributeSelector {
 
-    def render: String = schema.map(_.asString + ":").getOrElse("") + name + s"[${filter.render}]" + subAttribute.map("." + _).getOrElse("")
+    def render: String =
+      schema.map(_.asString + ":").getOrElse("") + name + s"[${filter.render}]" + subAttribute.map("." + _).getOrElse("")
   }
 
   sealed trait Value {
@@ -209,126 +217,125 @@ object Filter {
   }
 
   private object Parser {
-    import fastparse._
-    import NoWhitespace._
+    import fastparse.*
+    import NoWhitespace.*
 
     def parseFilter(string: String): Either[String, Filter] = {
       if string.trim.isEmpty then Right(NoFilter)
       else {
-        fastparse.parse(string, completeFilter, verboseFailures = true) match {
+        fastparse.parse(string, completeFilter(using _), verboseFailures = true) match {
           case Parsed.Success(value, _) => Right(value)
-          case failure: Parsed.Failure => Left(failure.longMsg)
+          case failure: Parsed.Failure  => Left(failure.longMsg)
         }
       }
     }
 
     def parseAttributeSelector(string: String): Either[String, AttributeSelector] = {
-      fastparse.parse(string, attributeSelector, verboseFailures = true) match {
+      fastparse.parse(string, attributeSelector(using _), verboseFailures = true) match {
         case Parsed.Success(value, _) => Right(value)
-        case failure: Parsed.Failure => Left(failure.longMsg)
+        case failure: Parsed.Failure  => Left(failure.longMsg)
       }
     }
 
-    /**
-     * FILTER    = attrExp / logExp / valuePath / *1"not" "(" FILTER ")"
-     *
-     * valuePath = attrPath "[" valFilter "]"
-     * ; FILTER uses sub-attributes of a parent attrPath
-     *
-     * valFilter = attrExp / logExp / *1"not" "(" valFilter ")"
-     *
-     * attrExp   = (attrPath SP "pr") /
-     * (attrPath SP compareOp SP compValue)
-     *
-     * logExp    = FILTER SP ("and" / "or") SP FILTER
-     *
-     * compValue = false / null / true / number / string
-     * ; rules from JSON (RFC 7159)
-     *
-     * compareOp = "eq" / "ne" / "co" /
-     * "sw" / "ew" /
-     * "gt" / "lt" /
-     * "ge" / "le"
-     *
-     * attrPath  = [URI ":"] ATTRNAME *1subAttr
-     * ; SCIM attribute name
-     * ; URI is SCIM "schema" URI
-     *
-     * ATTRNAME  = ALPHA *(nameChar)
-     *
-     * nameChar  = "-" / "_" / DIGIT / ALPHA
-     *
-     * subAttr   = "." ATTRNAME
-     * ; a sub-attribute of a complex attribute
-     *
-     * Figure 1: ABNF Specification of SCIM Filters
-     */
+    /** FILTER = attrExp / logExp / valuePath / *1"not" "(" FILTER ")"
+      *
+      * valuePath = attrPath "[" valFilter "]" ; FILTER uses sub-attributes of a parent attrPath
+      *
+      * valFilter = attrExp / logExp / *1"not" "(" valFilter ")"
+      *
+      * attrExp = (attrPath SP "pr") / (attrPath SP compareOp SP compValue)
+      *
+      * logExp = FILTER SP ("and" / "or") SP FILTER
+      *
+      * compValue = false / null / true / number / string ; rules from JSON (RFC 7159)
+      *
+      * compareOp = "eq" / "ne" / "co" / "sw" / "ew" / "gt" / "lt" / "ge" / "le"
+      *
+      * attrPath = [URI ":"] ATTRNAME *1subAttr ; SCIM attribute name ; URI is SCIM "schema" URI
+      *
+      * ATTRNAME = ALPHA *(nameChar)
+      *
+      * nameChar = "-" / "_" / DIGIT / ALPHA
+      *
+      * subAttr = "." ATTRNAME ; a sub-attribute of a complex attribute
+      *
+      * Figure 1: ABNF Specification of SCIM Filters
+      */
 
-    def alpha[$: P] = P(CharIn("a-zA-Z").!)
-    def digit[$: P] = P(CharIn("0-9").!)
-    def uriPart[$: P] = P(CharsWhileIn("a-zA-Z0-9\\-\\.", 1))
-    def uriPrefix[$: P] = P("urn" ~ (":" ~ uriPart ~ &(":")).rep(1)).!
+    def alpha[$: P]: ParsingRun[String] = P(CharIn("a-zA-Z").!)
+    def digit[$: P]: ParsingRun[String] = P(CharIn("0-9").!)
+    def uriPart[$: P]: ParsingRun[Unit] = P(CharsWhileIn("a-zA-Z0-9\\-\\.", 1))
+    def uriPrefix[$: P]: ParsingRun[URI] = P("urn" ~ (":" ~ uriPart ~ &(":")).rep(1)).!
       .map(v => Try(URI.create(v)).toEither).filter(_.isRight)
       .map(_.getOrElse(throw new AssertionError("error in uri parser")))
 
     // Json Types
-    def `null`[$: P] = P("null").map(_ => NullValue)
-    def `false`[$: P] = P("false").map(_ => BooleanValue(false))
-    def `true`[$: P] = P("true").map(_ => BooleanValue(true))
-    def digits[$: P] = P(CharsWhileIn("0-9"))
-    def exponent[$: P] = P(CharIn("eE") ~ CharIn("+\\-").? ~ digits)
-    def fractional[$: P] = P("." ~ digits)
-    def integral[$: P] = P("0" | CharIn("1-9") ~ digits.?)
-    def number[$: P] = P(CharIn("+\\-").? ~ integral ~ fractional.? ~ exponent.?).!.map(_.toDouble).map(NumberValue.apply)
-    def stringChars(c: Char) = c != '\"' && c != '\\'
-    def space[$: P] = P(CharsWhileIn(" \r\n", 0))
-    def strChars[$: P] = P(CharsWhile(stringChars))
-    def hexDigit[$: P] = P(CharIn("0-9a-fA-F"))
-    def unicodeEscape[$: P] = P("u" ~ hexDigit ~ hexDigit ~ hexDigit ~ hexDigit)
-    def escape[$: P] = P("\\" ~ (CharIn("\"/\\\\bfnrt") | unicodeEscape))
-    def string[$: P] = P(space ~ "\"" ~/ (strChars | escape).rep.! ~ "\"").map(StringValue.apply)
+    def `null`[$: P]: ParsingRun[NullValue.type] = P("null").map(_ => NullValue)
+    def `false`[$: P]: ParsingRun[BooleanValue] = P("false").map(_ => BooleanValue(false))
+    def `true`[$: P]: ParsingRun[BooleanValue] = P("true").map(_ => BooleanValue(true))
+    def digits[$: P]: ParsingRun[Unit] = P(CharsWhileIn("0-9"))
+    def exponent[$: P]: ParsingRun[Unit] = P(CharIn("eE") ~ CharIn("+\\-").? ~ digits)
+    def fractional[$: P]: ParsingRun[Unit] = P("." ~ digits)
+    def integral[$: P]: ParsingRun[Unit] = P("0" | CharIn("1-9") ~ digits.?)
+    def number[$: P]: ParsingRun[NumberValue] =
+      P(CharIn("+\\-").? ~ integral ~ fractional.? ~ exponent.?).!.map(_.toDouble).map(NumberValue.apply)
+    def stringChars(c: Char): Boolean = c != '\"' && c != '\\'
+    def space[$: P]: ParsingRun[Unit] = P(CharsWhileIn(" \r\n", 0))
+    def strChars[$: P]: ParsingRun[Unit] = P(CharsWhile(stringChars))
+    def hexDigit[$: P]: ParsingRun[Unit] = P(CharIn("0-9a-fA-F"))
+    def unicodeEscape[$: P]: ParsingRun[Unit] = P("u" ~ hexDigit ~ hexDigit ~ hexDigit ~ hexDigit)
+    def escape[$: P]: ParsingRun[Unit] = P("\\" ~ (CharIn("\"/\\\\bfnrt") | unicodeEscape))
+    def string[$: P]: ParsingRun[StringValue] =
+      P(space ~ "\"" ~/ (strChars | escape).rep.! ~ "\"").map(StringValue.apply)
 
-    def nameChar[$: P] = P(CharIn("\\-_").! | digit | alpha)
-    def attrname[$: P] = P((alpha ~ nameChar.rep).!)
-    def subattr[$: P] = P("." ~ attrname)
-    def attrPath[$: P] = P((uriPrefix ~ ":").? ~ attrname ~ subattr.?).map(v => AttributePath(v._2, v._1.map(Schema.apply), v._3))
+    def nameChar[$: P]: ParsingRun[String] = P(CharIn("\\-_").! | digit | alpha)
+    def attrname[$: P]: ParsingRun[String] = P((alpha ~ nameChar.rep).!)
+    def subattr[$: P]: ParsingRun[String] = P("." ~ attrname)
+    def attrPath[$: P]: ParsingRun[AttributePath] =
+      P((uriPrefix ~ ":").? ~ attrname ~ subattr.?).map(v => AttributePath(v._2, v._1.map(Schema.apply), v._3))
     def filteredAttrPath[$: P]: P[FilteredAttributePath] = P(attrPath ~ "[" ~/ valFilter ~ "]" ~ subattr.?).map {
       case (path, filter, sub) => FilteredAttributePath(path.name, filter, path.schema, sub)
     }
-    def compareOp[$: P] = P(StringInIgnoreCase("eq", "ne", "co", "sw", "ew", "gt", "lt", "ge", "le")).!
-      .map(_.toLowerCase)
-      .map[(AttributePath, Value) => Comparison] {
-        case "eq" => (p, v) => Comparison.Equal(p, v)
-        case "ne" => (p, v) => Comparison.NotEqual(p, v)
-        case "co" => (p, v) => Comparison.Contains(p, v)
-        case "sw" => (p, v) => Comparison.StartsWith(p, v)
-        case "ew" => (p, v) => Comparison.EndsWith(p, v)
-        case "gt" => (p, v) => Comparison.GreaterThan(p, v)
-        case "ge" => (p, v) => Comparison.GreaterThanOrEqual(p, v)
-        case "lt" => (p, v) => Comparison.LessThan(p, v)
-        case "le" => (p, v) => Comparison.LessThanOrEqual(p, v)
-      }
+    def compareOp[$: P]: ParsingRun[(AttributePath, Value) => Comparison] =
+      P(StringInIgnoreCase("eq", "ne", "co", "sw", "ew", "gt", "lt", "ge", "le")).!
+        .map(_.toLowerCase)
+        .map[(AttributePath, Value) => Comparison] {
+          case "eq" => (p, v) => Comparison.Equal(p, v)
+          case "ne" => (p, v) => Comparison.NotEqual(p, v)
+          case "co" => (p, v) => Comparison.Contains(p, v)
+          case "sw" => (p, v) => Comparison.StartsWith(p, v)
+          case "ew" => (p, v) => Comparison.EndsWith(p, v)
+          case "gt" => (p, v) => Comparison.GreaterThan(p, v)
+          case "ge" => (p, v) => Comparison.GreaterThanOrEqual(p, v)
+          case "lt" => (p, v) => Comparison.LessThan(p, v)
+          case "le" => (p, v) => Comparison.LessThanOrEqual(p, v)
+        }
     def compValue[$: P]: P[Value] = P(`false` | `null` | `true` | number | string)
 
-
-    def attrExpPresent[$: P]: P[Comparison] = P(attrPath ~ space ~ IgnoreCase("pr")).map(attrPath => Comparison.Present(attrPath))
-    def attrExpCompare[$: P]: P[Comparison] = (attrPath ~ space ~ compareOp ~ space ~ compValue).map { case (path, op, value) => op(path, value) }
+    def attrExpPresent[$: P]: P[Comparison] =
+      P(attrPath ~ space ~ IgnoreCase("pr")).map(attrPath => Comparison.Present(attrPath))
+    def attrExpCompare[$: P]: P[Comparison] =
+      (attrPath ~ space ~ compareOp ~ space ~ compValue).map { case (path, op, value) => op(path, value) }
     def attrExp[$: P]: P[Comparison] = P(attrExpPresent | attrExpCompare)
     def parensExp[$: P]: P[AFilter] = P((IgnoreCase("not") ~ space).!.? ~ "(" ~/ filter ~ ")").map {
       case (Some(_), filter) => Not(filter)
-      case (None, filter) => filter
+      case (None, filter)    => filter
     }
-    def valuePath[$: P]: P[ComplexAttributeFilter] = P(attrPath ~ "[" ~/ valFilter ~ "]").map { case (path, filter) => ComplexAttributeFilter(path, filter) }
-    def logicalOperator[$: P]: P[(AFilter, AFilter) => LogicalOperation] = P(IgnoreCase("and")).map(_ => And.apply) | P(IgnoreCase("or")).map(_ => Or.apply)
+    def valuePath[$: P]: P[ComplexAttributeFilter] = P(attrPath ~ "[" ~/ valFilter ~ "]").map { case (path, filter) =>
+      ComplexAttributeFilter(path, filter)
+    }
+    def logicalOperator[$: P]: P[(AFilter, AFilter) => LogicalOperation] =
+      P(IgnoreCase("and")).map(_ => And.apply) | P(IgnoreCase("or")).map(_ => Or.apply)
 
     def valFilter[$: P]: P[AFilter] = P((parensExp | attrExp) ~ (space ~ logicalOperator ~ space ~ valFilter).?).map {
-      case (a, None) => a
+      case (a, None)          => a
       case (a, Some((op, b))) => op(a, b)
     }
-    def filter[$: P]: P[AFilter] = P((parensExp | valuePath | attrExp) ~ (space ~ logicalOperator ~ space ~ filter).?).map {
-      case (a, None) => a
-      case (a, Some((op, b))) => op(a, b)
-    }
+    def filter[$: P]: P[AFilter] =
+      P((parensExp | valuePath | attrExp) ~ (space ~ logicalOperator ~ space ~ filter).?).map {
+        case (a, None)          => a
+        case (a, Some((op, b))) => op(a, b)
+      }
 
     def completeFilter[$: P]: P[AFilter] = P(Start ~ filter ~ End)
 

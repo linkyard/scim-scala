@@ -2,12 +2,14 @@ package scim.rest
 
 import cats.Monad
 import io.circe.Json
-import scim.model.Codecs._
+import scim.model.Codecs.*
 import scim.model.Group.Member
-import scim.rest.Resource.{Path, QueryParams}
+import scim.rest.Resource.Path
+import scim.rest.Resource.QueryParams
 import scim.spi.GroupStore
 
-private class GroupResource[F[_]](urlConfig: UrlConfig)(implicit store: GroupStore[F], monad: Monad[F]) extends Resource[F] {
+private class GroupResource[F[_]](urlConfig: UrlConfig)(implicit store: GroupStore[F], monad: Monad[F])
+    extends Resource[F] {
   private def pure[A]: A => F[A] = monad.pure
 
   override def get(subPath: Path, queryParams: QueryParams): F[Response] = {
@@ -33,7 +35,11 @@ private class GroupResource[F[_]](urlConfig: UrlConfig)(implicit store: GroupSto
   }
 
   override def patch(subPath: Path, queryParams: QueryParams, body: Json): F[Response] = {
-    Helpers.Patch.patchArrayAttribute[F, Member](subPath, body, urlConfig.group)("members", store.addToGroup, store.removeFromGroup)
+    Helpers.Patch.patchArrayAttribute[F, Member](subPath, body, urlConfig.group)(
+      "members",
+      store.addToGroup,
+      store.removeFromGroup,
+    )
       .orElse(Helpers.Patch.patchViaJson(subPath, body, urlConfig.base)(store.get, store.update))
       .getOrElse(pure(Response.notImplemented))
   }
