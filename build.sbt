@@ -1,12 +1,14 @@
 import sbt.Keys.libraryDependencies
+import xerial.sbt.Sonatype._
+
 ThisBuild / scalaVersion := Dependencies.scala
 ThisBuild / organization := "ch.linkyard.scim"
 ThisBuild / organizationName := "linkyard ag"
+ThisBuild / versionScheme := Some("early-semver")
 
-ThisBuild / githubOwner := "linkyard"
-ThisBuild / githubRepository := "scim-scala"
-
-githubTokenSource := TokenSource.Environment("GITHUB_TOKEN") || TokenSource.GitConfig("github.token")
+ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
+ThisBuild / publishTo := sonatypePublishToBundle.value
+ThisBuild / licenses := Seq("MIT" -> url("https://mit-license.org/"))
 
 lazy val root = (project in file("."))
   .settings(
@@ -20,16 +22,15 @@ lazy val root = (project in file("."))
       scalacOptions += "-feature",
       scalacOptions += "-unchecked",
       scalacOptions += "-deprecation",
-//      scalacOptions += "-Wconf:any:e",
-//      scalacOptions += "-Wconf:id=E198:w",
+      scalacOptions += "-Wconf:any:e",
+      scalacOptions += "-Wconf:id=E198:w",
       scalacOptions += "-Wvalue-discard",
       scalacOptions += "-Wunused:all",
       scalacOptions ++= Seq("-Xmax-inlines", "50"),
       ThisBuild / turbo := true,
       Test / logBuffered := false,
+      publish / skip := true,
       cancelable in Global := true,
-      githubTokenSource := TokenSource.GitConfig("github.token"),
-      publish := {},
       libraryDependencies ++= Seq(
         "io.kamon" %% "kamon-core" % Dependencies.kamon,
         "com.typesafe.scala-logging" %% "scala-logging" % Dependencies.scalaLogging,
@@ -49,7 +50,8 @@ lazy val root = (project in file("."))
 lazy val core = (project in file("core"))
   .settings(
     name := "scim-scala-core",
-    githubTokenSource := TokenSource.GitConfig("github.token"),
+    publish / skip := false,
+    sonatypeProjectHosting := Some(GitHubHosting("linkyard", "scim-scala", "mario.siegenthaler@linkyard.ch")),
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % Dependencies.cats,
       "io.circe" %% "circe-generic" % Dependencies.circe,
