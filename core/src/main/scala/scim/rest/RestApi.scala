@@ -16,12 +16,7 @@ class RestApi[F[_]] private (
   urlConfig: UrlConfig,
   _resourceTypes: Iterable[ResourceType],
   schemaDefinitions: Iterable[SchemaDefinition],
-)(
-  implicit
-  monad: Monad[F],
-  userStore: UserStore[F],
-  groupStore: GroupStore[F],
-) {
+)(using Monad[F], UserStore[F], GroupStore[F]) {
   def user: Resource[F] = new UserResource[F](urlConfig)
   def group: Resource[F] = new GroupResource[F](urlConfig)
   def resourceTypes: Resource[F] = new ResourceTypeResource[F](urlConfig, _resourceTypes)

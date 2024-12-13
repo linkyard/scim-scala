@@ -2,7 +2,7 @@ package scim.spi
 
 sealed trait SpiError
 
-object SpiError {
+object SpiError:
   sealed trait CreationError extends SpiError
   sealed trait UpdateError extends SpiError
 
@@ -12,4 +12,3 @@ object SpiError {
   case class MissingData(details: String) extends SpiError with CreationError with UpdateError
   case class DoesNotExist(id: String) extends SpiError with UpdateError
   case class Conflict(details: String) extends SpiError with UpdateError
-}

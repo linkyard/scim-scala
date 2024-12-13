@@ -11,7 +11,7 @@ import java.net.URI
 
 case class Response(status: Int, body: Option[Json] = None, locationHeader: Option[URI] = None)
 
-object Response {
+object Response:
   def apply(status: Int, body: Json): Response = Response(status, Some(body))
 
   def ok: Response = Response(200, None)
@@ -40,4 +40,3 @@ object Response {
   def conflict(details: String): Response = error(Error(409, detail = Some(details), scimType = Some("mutability")))
 
   def notImplemented: Response = error(Error(501, detail = Some("Not implemented")))
-}

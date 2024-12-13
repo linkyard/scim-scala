@@ -8,9 +8,9 @@ import scim.rest.Resource.Path
 import scim.rest.Resource.QueryParams
 import scim.spi.GroupStore
 
-private class GroupResource[F[_]](urlConfig: UrlConfig)(implicit store: GroupStore[F], monad: Monad[F])
-    extends Resource[F] {
-  private def pure[A]: A => F[A] = monad.pure
+private class GroupResource[F[_]: Monad](urlConfig: UrlConfig)(using store: GroupStore[F])
+    extends Resource[F]:
+  private def pure[A]: A => F[A] = Monad[F].pure
 
   override def get(subPath: Path, queryParams: QueryParams): F[Response] =
     Helpers.Get.retrieve(subPath, urlConfig.base)(store.get)
@@ -38,4 +38,3 @@ private class GroupResource[F[_]](urlConfig: UrlConfig)(implicit store: GroupSto
     )
       .orElse(Helpers.Patch.patchViaJson(subPath, body, urlConfig.base)(store.get, store.update))
       .getOrElse(pure(Response.notImplemented))
-}

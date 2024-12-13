@@ -39,7 +39,7 @@ import scim.spi.SpiError.UpdateError
 
 import java.net.URI
 
-private object Helpers {
+private object Helpers:
   type Id = String
 
   type QueryFun[F[_], A] = (Filter, Paging, Option[Sorting]) => F[SearchResult[A]]
@@ -86,7 +86,7 @@ private object Helpers {
       else None
   }
 
-  object Post {
+  object Post:
     def create[F[_]: Applicative, A <: ExtensibleModel[?]: Decoder](subPath: Path, body: Json, base: URI)(
       create: A => F[Either[CreationError, A]]
     ): Option[F[Response]] =
@@ -122,9 +122,9 @@ private object Helpers {
               .fold(Applicative[F].pure, identity)
         }
       else None
-  }
+  end Post
 
-  object Put {
+  object Put:
     def update[F[_]: Applicative, A <: ExtensibleModel[?]: Decoder](subPath: Path, body: Json, base: URI)(
       update: A => F[Either[UpdateError, A]]
     ): Option[F[Response]] =
@@ -144,9 +144,9 @@ private object Helpers {
       json.asObject.map(_.add("id", Json.fromString(id)))
         .map(Json.fromJsonObject)
         .getOrElse(json)
-  }
+  end Put
 
-  object Delete {
+  object Delete:
     def delete[F[_]: Applicative](subPath: Path)(delete: Id => F[Either[DoesNotExist, Unit]]): Option[F[Response]] =
       subpathToId(subPath).map { id =>
         delete(id).map {
@@ -154,10 +154,9 @@ private object Helpers {
           case Left(DoesNotExist(id)) => Response.notFound(id)
         }
       }
-  }
+  end Delete
 
-  object Patch {
-
+  object Patch:
     /** gets the current state, patches that and updates all fields */
     def patchViaJson[F[_]: Monad, E, A <: ExtensibleModel[?]: Decoder](subPath: Path, body: Json, base: URI)(
       retrieve: Id => F[Either[DoesNotExist, A]],
@@ -223,7 +222,7 @@ private object Helpers {
         }
       }.fold(e => Some(Applicative[F].pure(e)), identity)
     }
-  }
+  end Patch
 
   private def handleUpdateResult[A <: ExtensibleModel[?]](base: URI)(updateResult: Either[UpdateError, A]): Response =
     updateResult match {
@@ -258,4 +257,3 @@ private object Helpers {
         )
       }.map(body => Response.okJson(body.asJson))
   }
-}
