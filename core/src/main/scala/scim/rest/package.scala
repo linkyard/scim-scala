@@ -2,8 +2,7 @@ package scim
 
 package object rest {
   object IntValue {
-    def parse(string: String): Either[String, Int] = {
+    def parse(string: String): Either[String, Int] =
       string.toIntOption.toRight(s"'$string' is not a number")
-    }
   }
 }

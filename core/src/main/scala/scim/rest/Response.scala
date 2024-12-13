@@ -17,9 +17,8 @@ object Response {
   def ok: Response = Response(200, None)
   def ok(body: JsonModel, base: URI): Response =
     okJson(body.asJson(base), locationHeader = body.meta.resolveLocation(base).location)
-  def okJson(body: Json, locationHeader: Option[URI] = None): Response = {
+  def okJson(body: Json, locationHeader: Option[URI] = None): Response =
     Response(200, Some(body), locationHeader = locationHeader)
-  }
   def noContent: Response = Response(204, None)
   def noContent(locationHeader: URI): Response = Response(204, None, locationHeader = Some(locationHeader))
 

@@ -20,11 +20,10 @@ case class ResourceTypeResource[F[_]](urlConfig: UrlConfig, resourceTypes: Itera
 ) extends Resource[F] {
   private def pure[A]: A => F[A] = applicative.pure
 
-  def get(subPath: Path, queryParams: QueryParams): F[Response] = {
+  def get(subPath: Path, queryParams: QueryParams): F[Response] =
     Helpers.Get.retrieve(subPath, urlConfig.base)(doGet)
       .orElse(Helpers.Get.search(subPath, queryParams, urlConfig.base)(doSearch))
       .getOrElse(pure(Response.notImplemented))
-  }
 
   private def doGet(id: Id): F[Either[DoesNotExist, ResourceType]] = pure {
     resourceTypes.find(_.id.equalsIgnoreCase(id))

@@ -16,11 +16,10 @@ case class SchemaDefinition(
   override def schemas: Seq[Schema] = List(Schema.SchemaItself)
   override def meta: Meta =
     Meta("Schema", locationRelative = Some(s"/Schemas/${URLEncoder.encode(schema.asString, "UTF-8")}"))
-  override def asJson(base: URI): Json = {
+  override def asJson(base: URI): Json =
     definition
       .deepMerge(Json.obj("meta" -> meta.resolveLocation(base).asJson))
       .deepMerge(Json.obj("schemas" -> Json.arr(schemas.map(_.asString).map(Json.fromString)*)))
-  }
 }
 
 object SchemaDefinition {

@@ -17,11 +17,10 @@ case class Group(json: Json) extends ExtensibleModel[Root] with LazyLogging {
   lazy val root: Result[Root] = json.as[Root]
   def rootOrDefault: Root = root.toOption.getOrElse(Root.fallback)
 
-  override def asJson(base: URI): Json = {
+  override def asJson(base: URI): Json =
     root.toOption.map(root => root.metaOrDefault.resolveLocation(base))
       .fold(json)(meta => json.deepMerge(Json.obj("meta" -> meta.asJson)))
       .deepDropNullValues
-  }
   override def meta: Meta = rootOrDefault.metaOrDefault
 
   def ++(other: Json): Group = Group(json.deepMerge(other))

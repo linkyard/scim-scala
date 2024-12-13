@@ -37,9 +37,8 @@ object RestApi {
     config: ServiceProviderConfiguration = defaultConfig,
     resourceTypes: Iterable[ResourceType] = defaultResourceTypes,
     schemaDefinitions: Iterable[SchemaDefinition] = SchemaDefinition.defaultSchemas,
-  ): RestApi[F] = {
+  ): RestApi[F] =
     new RestApi[F](config, urlConfig, resourceTypes, schemaDefinitions)
-  }
 
   val defaultConfig = new ServiceProviderConfiguration(
     patch = OptionSupported(true),

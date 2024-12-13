@@ -19,11 +19,10 @@ class SchemasResource[F[_]](urlConfig: UrlConfig, schemas: Iterable[SchemaDefini
 ) extends Resource[F] {
   private def pure[A]: A => F[A] = applicative.pure
 
-  def get(subPath: Path, queryParams: QueryParams): F[Response] = {
+  def get(subPath: Path, queryParams: QueryParams): F[Response] =
     Helpers.Get.retrieve(subPath, urlConfig.base)(doGet)
       .orElse(Helpers.Get.search(subPath, queryParams, urlConfig.base)(doSearch))
       .getOrElse(pure(Response.notImplemented))
-  }
 
   private def doGet(id: Id): F[Either[DoesNotExist, SchemaDefinition]] = pure {
     schemas.find(_.schema.asString.equalsIgnoreCase(id))

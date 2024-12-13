@@ -169,11 +169,10 @@ object Filter {
     def isLessThan(other: Json): Boolean
     def render: String
 
-    protected def valueOf[X: Decoder](from: Json): Iterable[X] = {
+    protected def valueOf[X: Decoder](from: Json): Iterable[X] =
       from.as[Seq[X]].toOption
         .orElse(from.as[X].toOption.map(Seq(_)))
         .getOrElse(Seq.empty)
-    }
   }
   case class StringValue(value: String) extends Value {
     def isEqualTo(other: Json): Boolean = stringValue(other).exists(_ == value)
@@ -220,22 +219,19 @@ object Filter {
     import fastparse.*
     import NoWhitespace.*
 
-    def parseFilter(string: String): Either[String, Filter] = {
+    def parseFilter(string: String): Either[String, Filter] =
       if string.trim.isEmpty then Right(NoFilter)
-      else {
+      else
         fastparse.parse(string, completeFilter(using _), verboseFailures = true) match {
           case Parsed.Success(value, _) => Right(value)
           case failure: Parsed.Failure  => Left(failure.longMsg)
         }
-      }
-    }
 
-    def parseAttributeSelector(string: String): Either[String, AttributeSelector] = {
+    def parseAttributeSelector(string: String): Either[String, AttributeSelector] =
       fastparse.parse(string, attributeSelector(using _), verboseFailures = true) match {
         case Parsed.Success(value, _) => Right(value)
         case failure: Parsed.Failure  => Left(failure.longMsg)
       }
-    }
 
     /** FILTER = attrExp / logExp / valuePath / *1"not" "(" FILTER ")"
       *

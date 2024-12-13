@@ -48,7 +48,7 @@ private object Helpers {
     def retrieve[F[_]: Applicative, A <: JsonModel](
       subPath: Path,
       base: URI,
-    )(get: Id => F[Either[DoesNotExist, A]]): Option[F[Response]] = {
+    )(get: Id => F[Either[DoesNotExist, A]]): Option[F[Response]] =
       subpathToId(subPath).map { id =>
         get(id).map {
           case Right(r) =>
@@ -57,13 +57,12 @@ private object Helpers {
             Response.notFound(id)
         }
       }
-    }
 
     def search[F[_]: Applicative, A <: JsonModel](
       subPath: Path,
       queryParams: QueryParams,
       base: URI,
-    )(query: QueryFun[F, A]): Option[F[Response]] = {
+    )(query: QueryFun[F, A]): Option[F[Response]] =
       if subpathToId(subPath).isEmpty then
         Some {
           (for
@@ -85,13 +84,12 @@ private object Helpers {
             .fold(Applicative[F].pure, identity)
         }
       else None
-    }
   }
 
   object Post {
     def create[F[_]: Applicative, A <: ExtensibleModel[?]: Decoder](subPath: Path, body: Json, base: URI)(
       create: A => F[Either[CreationError, A]]
-    ): Option[F[Response]] = {
+    ): Option[F[Response]] =
       if subPath.isEmpty then
         Some {
           decodeBody[A](body)
@@ -109,30 +107,27 @@ private object Helpers {
             .fold(Applicative[F].pure, identity)
         }
       else None
-    }
 
     def search[F[_]: Applicative, A <: JsonModel](
       subPath: Path,
       body: Json,
       base: URI,
-    )(query: QueryFun[F, A]): Option[F[Response]] = {
+    )(query: QueryFun[F, A]): Option[F[Response]] =
       if subPath.headOption.contains(".search") then
         Some {
           if subPath.size > 1 then Applicative[F].pure(Response.notFound)
-          else {
+          else
             decodeBody[SearchRequest](body)
               .map(executeQueryRequest(query, base))
               .fold(Applicative[F].pure, identity)
-          }
         }
       else None
-    }
   }
 
   object Put {
     def update[F[_]: Applicative, A <: ExtensibleModel[?]: Decoder](subPath: Path, body: Json, base: URI)(
       update: A => F[Either[UpdateError, A]]
-    ): Option[F[Response]] = {
+    ): Option[F[Response]] =
       subpathToId(subPath).map { id =>
         decodeBody[A](body)
           .flatMap(entity =>
@@ -144,24 +139,21 @@ private object Helpers {
           .map(_.map(handleUpdateResult(base)))
           .fold(Applicative[F].pure, identity)
       }
-    }
 
-    private def addId(json: Json, id: String): Json = {
+    private def addId(json: Json, id: String): Json =
       json.asObject.map(_.add("id", Json.fromString(id)))
         .map(Json.fromJsonObject)
         .getOrElse(json)
-    }
   }
 
   object Delete {
-    def delete[F[_]: Applicative](subPath: Path)(delete: Id => F[Either[DoesNotExist, Unit]]): Option[F[Response]] = {
+    def delete[F[_]: Applicative](subPath: Path)(delete: Id => F[Either[DoesNotExist, Unit]]): Option[F[Response]] =
       subpathToId(subPath).map { id =>
         delete(id).map {
           case Right(())              => Response.noContent
           case Left(DoesNotExist(id)) => Response.notFound(id)
         }
       }
-    }
   }
 
   object Patch {
@@ -170,7 +162,7 @@ private object Helpers {
     def patchViaJson[F[_]: Monad, E, A <: ExtensibleModel[?]: Decoder](subPath: Path, body: Json, base: URI)(
       retrieve: Id => F[Either[DoesNotExist, A]],
       update: A => F[Either[UpdateError, A]],
-    ): Option[F[Response]] = {
+    ): Option[F[Response]] =
       subpathToId(subPath).map { id =>
         decodeBody[PatchOp](body)
           .map { op =>
@@ -187,7 +179,6 @@ private object Helpers {
             }
           }.fold(Applicative[F].pure, identity)
       }
-    }
 
     type ArrayAddFun[F[_], M] = (String, Set[M]) => Option[F[Either[UpdateError, Unit]]]
     type ArrayRemoveFun[F[_]] = (String, Filter) => Option[F[Either[UpdateError, Unit]]]
@@ -234,7 +225,7 @@ private object Helpers {
     }
   }
 
-  private def handleUpdateResult[A <: ExtensibleModel[?]](base: URI)(updateResult: Either[UpdateError, A]): Response = {
+  private def handleUpdateResult[A <: ExtensibleModel[?]](base: URI)(updateResult: Either[UpdateError, A]): Response =
     updateResult match {
       case Right(updated)               => Response.ok(updated, base)
       case Left(DoesNotExist(id))       => Response.notFound(id)
@@ -242,7 +233,6 @@ private object Helpers {
       case Left(MalformedData(details)) => Response.malformedData(details)
       case Left(MissingData(details))   => Response.missingValue(details)
     }
-  }
 
   private def decodeBody[A: Decoder](body: Json): Either[Response, A] =
     body.as[A].left.map(Response.decodingFailed)
