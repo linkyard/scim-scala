@@ -6,7 +6,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.OptionValues
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
-import scim.model.Codecs.*
+import scim.model.Codecs.given
 import scim.model.Group
 import scim.model.ListResponse
 import scim.model.User

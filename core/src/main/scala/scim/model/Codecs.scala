@@ -17,54 +17,54 @@ import java.util.Locale
 import scala.util.Try
 
 object Codecs {
-  implicit val localeDecoder: Decoder[Locale] = Decoder.decodeString.map(v => new Locale(v))
-  implicit val localeEncoder: Encoder[Locale] = Encoder.encodeString.contramap(_.toString)
-  implicit val uriDecoder: Decoder[URI] =
+  given Decoder[Locale] = Decoder.decodeString.map(v => new Locale(v))
+  given Encoder[Locale] = Encoder.encodeString.contramap(_.toString)
+  given Decoder[URI] =
     Decoder.decodeString.emap(v => Try(URI.create(v)).toEither.left.map(_ => s"$v is not a valid URI"))
-  implicit val uriEncoder: Encoder[URI] = Encoder.encodeString.contramap(_.toString)
+  given Encoder[URI] = Encoder.encodeString.contramap(_.toString)
 
-  implicit val schemaDecoder: Decoder[Schema] = Decoder.decodeString.emap(Schema.parse)
-  implicit val schemaEncoder: Encoder[Schema] = Encoder.encodeString.contramap(_.asString)
+  given Decoder[Schema] = Decoder.decodeString.emap(Schema.parse)
+  given Encoder[Schema] = Encoder.encodeString.contramap(_.asString)
 
-  implicit val filterDecoder: Decoder[Filter] = Decoder.decodeString.emap(Filter.parse)
-  implicit val filterEncoder: Encoder[Filter] = Encoder.encodeString.contramap(_.render)
+  given Decoder[Filter] = Decoder.decodeString.emap(Filter.parse)
+  given Encoder[Filter] = Encoder.encodeString.contramap(_.render)
 
-  implicit val attributeSelectorDecoder: Decoder[AttributeSelector] =
+  given Decoder[AttributeSelector] =
     Decoder.decodeString.emap(Filter.parseAttributeSelector)
-  implicit val attributeSelectorEncoder: Encoder[AttributeSelector] = Encoder.encodeString.contramap(_.render)
+  given Encoder[AttributeSelector] = Encoder.encodeString.contramap(_.render)
 
-  implicit val sortOrderDecoder: Decoder[SortOrder] = Decoder.decodeString.emap(SortOrder.parse)
-  implicit val sortOrderEncoder: Encoder[SortOrder] = Encoder.encodeString.contramap(_.asString)
+  given Decoder[SortOrder] = Decoder.decodeString.emap(SortOrder.parse)
+  given Encoder[SortOrder] = Encoder.encodeString.contramap(_.asString)
 
-  implicit val operationTypeDecoder: Decoder[OperationType] = Decoder.decodeString.map(_.toLowerCase).emap {
+  given Decoder[OperationType] = Decoder.decodeString.map(_.toLowerCase).emap {
     case "add"     => Right(OperationType.Add)
     case "remove"  => Right(OperationType.Remove)
     case "replace" => Right(OperationType.Replace)
     case other     => Left(s"Unsupported patch operation '$other'")
   }
-  implicit val operationTypeEncoder: Encoder[OperationType] = Encoder.encodeString.contramap {
+  given Encoder[OperationType] = Encoder.encodeString.contramap {
     case OperationType.Add     => "add"
     case OperationType.Remove  => "remove"
     case OperationType.Replace => "replace"
   }
-  implicit val patchOpOperationCodec: Codec[PatchOp.Operation] = deriveCodec
-  implicit val patchOpCodec: Codec[PatchOp] = deriveCodec
-  implicit val optionSupportedCodec: Codec[OptionSupported] = deriveCodec
-  implicit val bulkOptionsCodec: Codec[BulkOptions] = deriveCodec
-  implicit val filterOptionsCodec: Codec[FilterOptions] = deriveCodec
-  implicit val authenticationOptionsCodec: Codec[AuthenticationOptions] = deriveCodec
+  given Codec[PatchOp.Operation] = deriveCodec
+  given Codec[PatchOp] = deriveCodec
+  given Codec[OptionSupported] = deriveCodec
+  given Codec[BulkOptions] = deriveCodec
+  given Codec[FilterOptions] = deriveCodec
+  given Codec[AuthenticationOptions] = deriveCodec
 
-  implicit val errorCodec: Codec[Error] = deriveCodec
-  implicit val searchRequestCodec: Codec[SearchRequest] = deriveCodec
-  implicit val listResponseCodec: Codec[ListResponse] = deriveCodec
-  implicit val serviceProviderConfigurationCodec: Codec[ServiceProviderConfiguration] = deriveCodec
+  given Codec[Error] = deriveCodec
+  given Codec[SearchRequest] = deriveCodec
+  given Codec[ListResponse] = deriveCodec
+  given Codec[ServiceProviderConfiguration] = deriveCodec
 
-  implicit val userDecoder: Decoder[User] = Decoder.decodeJson.map(User.apply)
-  implicit val groupDecoder: Decoder[Group] = Decoder.decodeJson.map(Group.apply)
-  implicit val groupMemberCodec: Codec[Group.Member] = deriveCodec
+  given Decoder[User] = Decoder.decodeJson.map(User.apply)
+  given Decoder[Group] = Decoder.decodeJson.map(Group.apply)
+  given Codec[Group.Member] = deriveCodec
 
-  implicit val schemaTypeExtension: Codec[SchemaExtension] = deriveCodec
-  implicit val resourceTypeCode: Codec[ResourceType] = deriveCodec
+  given Codec[SchemaExtension] = deriveCodec
+  given Codec[ResourceType] = deriveCodec
 
-  implicit val metaCodec: Codec[Meta] = deriveCodec
+  given Codec[Meta] = deriveCodec
 }

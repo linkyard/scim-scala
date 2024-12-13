@@ -8,7 +8,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.Checkers
 import scim.model.Arbitraries.given
-import scim.model.Codecs.*
+import scim.model.Codecs.given
 
 class PatchOpSpec extends AnyFunSpec with Checkers with Matchers with OptionValues {
   describe("PatchOp") {

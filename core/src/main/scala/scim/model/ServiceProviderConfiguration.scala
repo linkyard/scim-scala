@@ -3,7 +3,7 @@ package scim.model
 import io.circe.Encoder
 import io.circe.Json
 import io.circe.syntax.*
-import scim.model.Codecs.*
+import scim.model.Codecs.given
 import scim.model.ServiceProviderConfiguration.*
 
 import java.net.URI
@@ -19,10 +19,8 @@ case class ServiceProviderConfiguration(
   documentationUri: Option[URI] = None,
   schemas: Seq[Schema] = Seq(Schema.ServiceProviderConfiguration),
 ) extends RootModel with JsonModel {
-  override def asJson(base: URI): Json = {
-    val encoder = implicitly[Encoder[ServiceProviderConfiguration]]
-    encoder(this).deepMerge(Json.obj("meta" -> meta.resolveLocation(base).asJson))
-  }
+  override def asJson(base: URI): Json = Encoder[ServiceProviderConfiguration].apply(this)
+    .deepMerge(Json.obj("meta" -> meta.resolveLocation(base).asJson))
   override def meta: Meta = Meta("ServiceProviderConfig", locationRelative = Some("/ServiceProviderConfig"))
 }
 

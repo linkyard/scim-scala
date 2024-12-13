@@ -5,7 +5,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.Checkers
 import scim.model.Arbitraries.given
-import scim.model.Codecs.*
+import scim.model.Codecs.given
 
 import java.net.URI
 

@@ -21,6 +21,7 @@ import scim.spi.UserStore
 
 import java.net.URI
 import java.util.UUID
+import io.circe.Codec
 
 /** Mutable store in the Id monad */
 trait MockStore[A <: ExtensibleModel[?]] {
@@ -73,20 +74,20 @@ object MockStore {
   trait MockUserStore extends UserStore[Id] with MockStore[User] {
     override protected def schema = Schema.User
     override protected def duplicate(a: User, b: User): Boolean = a.rootOrDefault.userName == b.rootOrDefault.userName
-    override protected implicit def decoder: Decoder[User] = Codecs.userDecoder
+    override protected implicit def decoder: Decoder[User] = Codecs.given_Decoder_User
   }
   trait MockGroupStore extends GroupStore[Id] with MockStore[Group] {
     override protected def schema = Schema.Group
     override protected def duplicate(a: Group, b: Group): Boolean =
       a.rootOrDefault.displayName == b.rootOrDefault.displayName
-    override protected implicit def decoder: Decoder[Group] = Codecs.groupDecoder
+    override protected implicit def decoder: Decoder[Group] = Codecs.given_Decoder_Group
   }
   trait MockOptimizedGroupStore extends GroupStore[Id] with MockStore[Group] {
     var wasOptimized = false
     override protected def schema = Schema.Group
     override protected def duplicate(a: Group, b: Group): Boolean =
       a.rootOrDefault.displayName == b.rootOrDefault.displayName
-    override protected implicit def decoder: Decoder[Group] = Codecs.groupDecoder
+    override protected implicit def decoder: Decoder[Group] = Codecs.given_Decoder_Group
 
     override def addToGroup(groupId: String, members: Set[Group.Member]): Option[Id[Either[UpdateError, Unit]]] = Some {
       wasOptimized = true

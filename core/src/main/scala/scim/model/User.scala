@@ -5,7 +5,7 @@ import io.circe.Decoder.Result
 import io.circe.Json
 import io.circe.generic.auto.*
 import io.circe.syntax.*
-import scim.model.Codecs.*
+import scim.model.Codecs.given
 import scim.model.User.Root
 
 import java.net.URI

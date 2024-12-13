@@ -3,7 +3,7 @@ package scim.model
 import io.circe.Json
 import io.circe.parser.*
 import io.circe.syntax.*
-import scim.model.Codecs.*
+import scim.model.Codecs.given
 
 import java.net.URI
 import java.net.URLEncoder

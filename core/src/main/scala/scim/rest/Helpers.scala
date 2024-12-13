@@ -6,7 +6,7 @@ import cats.implicits.*
 import io.circe.Decoder
 import io.circe.Json
 import io.circe.syntax.*
-import scim.model.Codecs.*
+import scim.model.Codecs.given
 import scim.model.ExtensibleModel
 import scim.model.Filter
 import scim.model.Filter.AFilter

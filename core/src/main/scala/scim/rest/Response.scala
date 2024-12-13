@@ -3,7 +3,7 @@ package scim.rest
 import io.circe.DecodingFailure
 import io.circe.Json
 import io.circe.syntax.*
-import scim.model.Codecs.*
+import scim.model.Codecs.given
 import scim.model.Error
 import scim.model.JsonModel
 

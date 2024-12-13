@@ -3,7 +3,7 @@ package scim.rest
 import cats.Monad
 import io.circe.Json
 import scim.model.*
-import scim.model.Codecs.*
+import scim.model.Codecs.given
 import scim.rest.Resource.Path
 import scim.rest.Resource.QueryParams
 import scim.spi.UserStore

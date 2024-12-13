@@ -5,6 +5,7 @@ import org.scalatest.OptionValues
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import scim.model.User.UserRef
+import scim.model.Codecs.given
 
 import java.net.URI
 
@@ -62,7 +63,7 @@ class UserSpec extends AnyFunSpec with Matchers with OptionValues {
     it("should serialize roundtrip to json without changing") {
       def ignoreMeta(json: Json): Json = json.mapObject(_.remove("meta"))
       def roundtrip(original: Json) = {
-        val r = Codecs.userDecoder.decodeJson(original)
+        val r = original.as[User]
         r.isRight should be(true)
         val user = r.getOrElse(fail(""))
         val json = user.asJson(URI.create("urn:none"))
