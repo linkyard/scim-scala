@@ -1,25 +1,26 @@
 import sbt._
 
 object Dependencies {
-  val scala = "2.13.3"
+  val scala = "3.5.2"
 
-  val cats = "2.1.1"
-  val catsEffect = "2.1.2"
-  val fs2 = "2.2.1"
-  val circe = "0.13.0"
+  val cats = "2.12.0"
+  val catsEffect = "3.5.7"
+  val fs2 = "3.11.1"
+  val circe = "0.14.10"
   def diffson = "4.0.2"
-  val fastParse = "2.3.0"
-  val scalaLogging = "3.9.2"
-  val kamon = "2.1.4"
 
-  val scalatest = "3.2.1"
-  val scalacheck = "1.14.3"
-  val scalatestScalacheck = "3.2.1.0"
-  val scalacheckShapeless = "1.2.5"
+  val fastParse = "3.1.1"
+  val scalaLogging = "3.9.5"
+  val kamon = "2.7.5"
+
+  val scalatest = "3.2.19"
+  val scalacheck = "1.18.1"
+  val scalatestScalacheck = "3.2.14.0"
+  val scalacheckShapeless = "1.3.1"
 
   val logBinding: Seq[ModuleID] = Seq(
-    "org.slf4j" % "jul-to-slf4j" % "1.7.30",
-    "org.slf4j" % "log4j-over-slf4j" % "1.7.30",
-    "ch.qos.logback" % "logback-classic" % "1.2.3"
+    "org.slf4j" % "jul-to-slf4j" % "2.0.16",
+    "org.slf4j" % "log4j-over-slf4j" % "2.0.16",
+    "ch.qos.logback" % "logback-classic" % "1.5.12",
   )
 }

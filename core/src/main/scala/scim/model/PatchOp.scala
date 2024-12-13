@@ -18,6 +18,8 @@ case class PatchOp(
 }
 
 object PatchOp {
+  private type EitherString[+A] = Either[String, A]
+
   sealed trait OperationType {
     private[PatchOp] def execute(on: Json, context: OperationContext): Either[String, Json]
   }
@@ -29,8 +31,8 @@ object PatchOp {
             addIt(root)(on, context.value)
           case Some(ap@AttributePath(name, _, None)) =>
             val jsonPath = ap.basePath(context.defaultSchema)
-            if (jsonPath.json.isEmpty(on)) {
-              val v = if (context.value.isArray) context.value else Json.arr(context.value)
+            if jsonPath.json.isEmpty(on) then {
+              val v = if context.value.isArray then context.value else Json.arr(context.value)
               on.asObject.map(_.add(name, v))
                 .map(Json.fromJsonObject)
                 .map(Right.apply)
@@ -40,14 +42,14 @@ object PatchOp {
             }
           case Some(ap@AttributePath(name, _, Some(subattr))) =>
             val jsonPath = ap.basePath(context.defaultSchema)
-            if (jsonPath.json.isEmpty(on)) {
+            if jsonPath.json.isEmpty(on) then {
               val v = Json.obj(subattr -> context.value)
               on.asObject.map(_.add(name, v))
                 .map(Json.fromJsonObject)
                 .map(Right.apply)
                 .getOrElse(Left("entity must be on object"))
             } else {
-              jsonPath.json.modifyF[Either[String, *]](_.asObject
+              jsonPath.json.modifyA[EitherString](_.asObject
                 .toRight("adding a sub attribute is only supported on complex values")
                 .map(o => o.add(subattr, context.value))
                 .map(Json.fromJsonObject)
@@ -58,8 +60,9 @@ object PatchOp {
         }
       }
 
+
       private def addIt(jsonPath: JsonPath)(on: Json, value: Json): Either[String, Json] = {
-        jsonPath.json.modifyF[Either[String, *]] { json =>
+        jsonPath.json.modifyA[EitherString] { json =>
           json.fold(
             jsonNull = Right(value),
             jsonBoolean = _ => Right(value),
@@ -72,7 +75,7 @@ object PatchOp {
                 .getOrElse(Left(s"not a complex object ${jsonPath.toString}")),
             jsonArray = array => {
               val updated = value.asArray.map(array.++).getOrElse {
-                if (value.isNull) array
+                if value.isNull then array
                 else array.appended(value)
               }
               Right(Json.fromValues(updated))
@@ -87,10 +90,10 @@ object PatchOp {
         (context.path match {
           case None => Left("no target")
           case Some(ap@AttributePath(_, _, None)) =>
-            if (context.value.isNull) Right(ap.basePath(context.defaultSchema).json.modify(_ => Json.Null)(on))
+            if context.value.isNull then Right(ap.basePath(context.defaultSchema).json.modify(_ => Json.Null)(on))
             else removeFiltered(ap.basePath(context.defaultSchema), v => context.value.asArray.map(_.contains(v)).getOrElse(v == context.value))(on)
           case Some(ap@AttributePath(_, _, Some(sub))) =>
-            if (context.value.isNull) removeOnSub(ap.basePath(context.defaultSchema), sub, _ => true)(on)
+            if context.value.isNull then removeOnSub(ap.basePath(context.defaultSchema), sub, _ => true)(on)
             else removeOnSub(ap.basePath(context.defaultSchema), sub, v => context.value.asArray.map(_.contains(v)).getOrElse(v == context.value))(on)
           case Some(ap@FilteredAttributePath(_, filter, _, None)) =>
             removeFiltered(ap.basePath(context.defaultSchema), filter.evaluate(_, context.defaultSchema))(on)
@@ -100,7 +103,7 @@ object PatchOp {
       }
 
       private def removeFiltered(jsonPath: JsonPath, filter: Json => Boolean)(on: Json): Either[String, Json] = {
-        jsonPath.json.modifyF[Either[String, *]](_.fold(
+        jsonPath.json.modifyA[EitherString](_.fold(
           jsonNull = Right(Json.Null),
           jsonBoolean = _ => Left("filtered removal on boolean type is illegal"),
           jsonNumber = _ => Left("filtered removal on number type is illegal"),
@@ -111,14 +114,14 @@ object PatchOp {
       }
 
       private def removeOnSub(jsonPath: JsonPath, sub: String, filter: Json => Boolean)(on: Json): Either[String, Json] = {
-        jsonPath.json.modifyF[Either[String, *]](_.fold(
+        jsonPath.json.modifyA[EitherString](_.fold(
           jsonNull = Right(Json.Null),
           jsonBoolean = _ => Left("expected complex object but was boolean"),
           jsonNumber = _ => Left("expected complex object but was number"),
           jsonString = _ => Left("expected complex object but was string"),
           jsonObject = obj => Right(Json.fromJsonObject(obj.remove(sub))),
-          jsonArray = arr => arr.traverse[Either[String, *], Json] { el =>
-            if (filter(el)) el.asObject.map(_.remove(sub)).map(Json.fromJsonObject).toRight("expected complex object")
+          jsonArray = arr => arr.traverse[EitherString, Json] { el =>
+            if filter(el) then el.asObject.map(_.remove(sub)).map(Json.fromJsonObject).toRight("expected complex object")
             else Right(el)
           }.map(Json.fromValues)
         ))(on)
@@ -145,15 +148,15 @@ object PatchOp {
       private def replaceOnBaseWithFilter(jsonPath: JsonPath, filter: Filter)(on: Json, value: Json): Either[String, Json] = {
         def update(element: Json): Either[String, Json] = Right(on)
 
-        jsonPath.json.modifyF[Either[String, *]](json =>
+        jsonPath.json.modifyA[EitherString](json =>
           json.asArray.toRight("filter only supported on array values")
-            .map(arr => arr.map(e => if (filter.evaluate(e)) value else e))
+            .map(arr => arr.map(e => if filter.evaluate(e) then value else e))
             .map(Json.fromValues)
         )(on)
       }
 
       private def replaceOnSub(jsonPath: JsonPath, sub: String)(on: Json, value: Json): Either[String, Json] = {
-        jsonPath.json.modifyF[Either[String, *]] { json =>
+        jsonPath.json.modifyA[EitherString] { json =>
           json.fold(
             jsonNull = Right(Json.obj(sub -> value)),
             jsonBoolean = _ => Left("expected complex object but was boolean"),
@@ -173,9 +176,9 @@ object PatchOp {
             .getOrElse(Left("sub attribute only supported on complex object"))
         }
 
-        jsonPath.json.modifyF[Either[String, *]](json =>
+        jsonPath.json.modifyA[EitherString](json =>
           json.asArray.toRight("filter only supported on array values")
-            .flatMap(arr => arr.traverse(e => if (filter.evaluate(e)) update(e) else Right(e)))
+            .flatMap(arr => arr.traverse(e => if filter.evaluate(e) then update(e) else Right(e)))
             .map(Json.fromValues)
         )(on)
       }

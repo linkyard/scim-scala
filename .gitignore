@@ -2,3 +2,5 @@
 .idea
 target
 .metals
+project/metals.sbt
+.bsp

@@ -5,6 +5,7 @@ ThisBuild / organizationName := "linkyard ag"
 
 ThisBuild / githubOwner := "linkyard"
 ThisBuild / githubRepository := "scim-scala"
+
 githubTokenSource := TokenSource.Environment("GITHUB_TOKEN") || TokenSource.GitConfig("github.token")
 
 lazy val root = (project in file("."))
@@ -12,16 +13,21 @@ lazy val root = (project in file("."))
     name := "scim-scala",
     inThisBuild(List(
       Global / onChangedBuildSource := ReloadOnSourceChanges,
+      semanticdbEnabled := true,
+      semanticdbVersion := scalafixSemanticdb.revision,
+      scalacOptions += "-source:3.0-migration",
+      scalacOptions += "-new-syntax",
+      scalacOptions += "-rewrite",
+      scalacOptions += "-feature",
       scalacOptions += "-unchecked",
       scalacOptions += "-deprecation",
-      scalacOptions += "-Xfatal-warnings",
-      scalacOptions += "-feature",
-      scalacOptions += "-Ymacro-annotations",
-      scalacOptions += "-language:higherKinds",
+//      scalacOptions += "-Wconf:any:e",
+//      scalacOptions += "-Wconf:id=E198:w",
+      scalacOptions += "-Wvalue-discard",
+      scalacOptions += "-Wunused:all",
+      scalacOptions ++= Seq("-Xmax-inlines", "50"),
       ThisBuild / turbo := true,
-      logBuffered in Test := false,
-      addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full),
-      addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
+      Test / logBuffered := false,
       cancelable in Global := true,
       githubTokenSource := TokenSource.GitConfig("github.token"),
       publish := {},
@@ -32,8 +38,7 @@ lazy val root = (project in file("."))
       libraryDependencies ++= Seq(
         "org.scalatest" %% "scalatest" % Dependencies.scalatest % Test,
         "org.scalacheck" %% "scalacheck" % Dependencies.scalacheck % Test,
-        "org.scalatestplus" %% "scalacheck-1-14" % Dependencies.scalatestScalacheck % Test,
-        "com.github.alexarchambault" %% "scalacheck-shapeless_1.14" % Dependencies.scalacheckShapeless % Test,
+        "org.scalatestplus" %% "scalacheck-1-16" % Dependencies.scalatestScalacheck % Test,
       ),
       libraryDependencies ++= Dependencies.logBinding.map(_ % Test),
     )))
@@ -48,7 +53,7 @@ lazy val core = (project in file("core"))
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % Dependencies.cats,
       "io.circe" %% "circe-generic" % Dependencies.circe,
-      "io.circe" %% "circe-optics" % Dependencies.circe,
+      "io.circe" %% "circe-optics" % "0.15.0",
       "com.lihaoyi" %% "fastparse" % Dependencies.fastParse,
       "io.circe" %% "circe-parser" % Dependencies.circe,
       "io.circe" %% "circe-testing" % Dependencies.circe % Test,

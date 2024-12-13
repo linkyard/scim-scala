@@ -196,7 +196,7 @@ object Filter {
     def isSuffixOf(other: Json): Boolean = false
     def isGreaterThan(other: Json): Boolean = false
     def isLessThan(other: Json): Boolean = false
-    def render: String = if (value) "true" else "false"
+    def render: String = if value then "true" else "false"
   }
   case object NullValue extends Value {
     def isEqualTo(other: Json): Boolean = other.isNull
@@ -213,9 +213,9 @@ object Filter {
     import NoWhitespace._
 
     def parseFilter(string: String): Either[String, Filter] = {
-      if (string.trim.isEmpty) Right(NoFilter)
+      if string.trim.isEmpty then Right(NoFilter)
       else {
-        fastparse.parse(string, completeFilter(_), verboseFailures = true) match {
+        fastparse.parse(string, completeFilter, verboseFailures = true) match {
           case Parsed.Success(value, _) => Right(value)
           case failure: Parsed.Failure => Left(failure.longMsg)
         }
@@ -223,7 +223,7 @@ object Filter {
     }
 
     def parseAttributeSelector(string: String): Either[String, AttributeSelector] = {
-      fastparse.parse(string, attributeSelector(_), verboseFailures = true) match {
+      fastparse.parse(string, attributeSelector, verboseFailures = true) match {
         case Parsed.Success(value, _) => Right(value)
         case failure: Parsed.Failure => Left(failure.longMsg)
       }
@@ -264,38 +264,38 @@ object Filter {
      * Figure 1: ABNF Specification of SCIM Filters
      */
 
-    def alpha[_: P] = P(CharIn("a-zA-Z").!)
-    def digit[_: P] = P(CharIn("0-9").!)
-    def uriPart[_: P] = P(CharsWhileIn("a-zA-Z0-9\\-\\.", 1))
-    def uriPrefix[_: P] = P("urn" ~ (":" ~ uriPart ~ &(":")).rep(1)).!
+    def alpha[$: P] = P(CharIn("a-zA-Z").!)
+    def digit[$: P] = P(CharIn("0-9").!)
+    def uriPart[$: P] = P(CharsWhileIn("a-zA-Z0-9\\-\\.", 1))
+    def uriPrefix[$: P] = P("urn" ~ (":" ~ uriPart ~ &(":")).rep(1)).!
       .map(v => Try(URI.create(v)).toEither).filter(_.isRight)
       .map(_.getOrElse(throw new AssertionError("error in uri parser")))
 
     // Json Types
-    def `null`[_: P] = P("null").map(_ => NullValue)
-    def `false`[_: P] = P("false").map(_ => BooleanValue(false))
-    def `true`[_: P] = P("true").map(_ => BooleanValue(true))
-    def digits[_: P] = P(CharsWhileIn("0-9"))
-    def exponent[_: P] = P(CharIn("eE") ~ CharIn("+\\-").? ~ digits)
-    def fractional[_: P] = P("." ~ digits)
-    def integral[_: P] = P("0" | CharIn("1-9") ~ digits.?)
-    def number[_: P] = P(CharIn("+\\-").? ~ integral ~ fractional.? ~ exponent.?).!.map(_.toDouble).map(NumberValue)
+    def `null`[$: P] = P("null").map(_ => NullValue)
+    def `false`[$: P] = P("false").map(_ => BooleanValue(false))
+    def `true`[$: P] = P("true").map(_ => BooleanValue(true))
+    def digits[$: P] = P(CharsWhileIn("0-9"))
+    def exponent[$: P] = P(CharIn("eE") ~ CharIn("+\\-").? ~ digits)
+    def fractional[$: P] = P("." ~ digits)
+    def integral[$: P] = P("0" | CharIn("1-9") ~ digits.?)
+    def number[$: P] = P(CharIn("+\\-").? ~ integral ~ fractional.? ~ exponent.?).!.map(_.toDouble).map(NumberValue.apply)
     def stringChars(c: Char) = c != '\"' && c != '\\'
-    def space[_: P] = P(CharsWhileIn(" \r\n", 0))
-    def strChars[_: P] = P(CharsWhile(stringChars))
-    def hexDigit[_: P] = P(CharIn("0-9a-fA-F"))
-    def unicodeEscape[_: P] = P("u" ~ hexDigit ~ hexDigit ~ hexDigit ~ hexDigit)
-    def escape[_: P] = P("\\" ~ (CharIn("\"/\\\\bfnrt") | unicodeEscape))
-    def string[_: P] = P(space ~ "\"" ~/ (strChars | escape).rep.! ~ "\"").map(StringValue)
+    def space[$: P] = P(CharsWhileIn(" \r\n", 0))
+    def strChars[$: P] = P(CharsWhile(stringChars))
+    def hexDigit[$: P] = P(CharIn("0-9a-fA-F"))
+    def unicodeEscape[$: P] = P("u" ~ hexDigit ~ hexDigit ~ hexDigit ~ hexDigit)
+    def escape[$: P] = P("\\" ~ (CharIn("\"/\\\\bfnrt") | unicodeEscape))
+    def string[$: P] = P(space ~ "\"" ~/ (strChars | escape).rep.! ~ "\"").map(StringValue.apply)
 
-    def nameChar[_: P] = P(CharIn("\\-_").! | digit | alpha)
-    def attrname[_: P] = P((alpha ~ nameChar.rep).!)
-    def subattr[_: P] = P("." ~ attrname)
-    def attrPath[_: P] = P((uriPrefix ~ ":").? ~ attrname ~ subattr.?).map(v => AttributePath(v._2, v._1.map(Schema.apply), v._3))
-    def filteredAttrPath[_: P]: P[FilteredAttributePath] = P(attrPath ~ "[" ~/ valFilter ~ "]" ~ subattr.?).map {
+    def nameChar[$: P] = P(CharIn("\\-_").! | digit | alpha)
+    def attrname[$: P] = P((alpha ~ nameChar.rep).!)
+    def subattr[$: P] = P("." ~ attrname)
+    def attrPath[$: P] = P((uriPrefix ~ ":").? ~ attrname ~ subattr.?).map(v => AttributePath(v._2, v._1.map(Schema.apply), v._3))
+    def filteredAttrPath[$: P]: P[FilteredAttributePath] = P(attrPath ~ "[" ~/ valFilter ~ "]" ~ subattr.?).map {
       case (path, filter, sub) => FilteredAttributePath(path.name, filter, path.schema, sub)
     }
-    def compareOp[_: P] = P(StringInIgnoreCase("eq", "ne", "co", "sw", "ew", "gt", "lt", "ge", "le")).!
+    def compareOp[$: P] = P(StringInIgnoreCase("eq", "ne", "co", "sw", "ew", "gt", "lt", "ge", "le")).!
       .map(_.toLowerCase)
       .map[(AttributePath, Value) => Comparison] {
         case "eq" => (p, v) => Comparison.Equal(p, v)
@@ -308,30 +308,30 @@ object Filter {
         case "lt" => (p, v) => Comparison.LessThan(p, v)
         case "le" => (p, v) => Comparison.LessThanOrEqual(p, v)
       }
-    def compValue[_: P]: P[Value] = P(`false` | `null` | `true` | number | string)
+    def compValue[$: P]: P[Value] = P(`false` | `null` | `true` | number | string)
 
 
-    def attrExpPresent[_: P]: P[Comparison] = P(attrPath ~ space ~ IgnoreCase("pr")).map(attrPath => Comparison.Present(attrPath))
-    def attrExpCompare[_: P]: P[Comparison] = (attrPath ~ space ~ compareOp ~ space ~ compValue).map { case (path, op, value) => op(path, value) }
-    def attrExp[_: P]: P[Comparison] = P(attrExpPresent | attrExpCompare)
-    def parensExp[_: P]: P[AFilter] = P((IgnoreCase("not") ~ space).!.? ~ "(" ~/ filter ~ ")").map {
+    def attrExpPresent[$: P]: P[Comparison] = P(attrPath ~ space ~ IgnoreCase("pr")).map(attrPath => Comparison.Present(attrPath))
+    def attrExpCompare[$: P]: P[Comparison] = (attrPath ~ space ~ compareOp ~ space ~ compValue).map { case (path, op, value) => op(path, value) }
+    def attrExp[$: P]: P[Comparison] = P(attrExpPresent | attrExpCompare)
+    def parensExp[$: P]: P[AFilter] = P((IgnoreCase("not") ~ space).!.? ~ "(" ~/ filter ~ ")").map {
       case (Some(_), filter) => Not(filter)
       case (None, filter) => filter
     }
-    def valuePath[_: P]: P[ComplexAttributeFilter] = P(attrPath ~ "[" ~/ valFilter ~ "]").map { case (path, filter) => ComplexAttributeFilter(path, filter) }
-    def logicalOperator[_: P]: P[(AFilter, AFilter) => LogicalOperation] = P(IgnoreCase("and")).map(_ => And) | P(IgnoreCase("or")).map(_ => Or)
+    def valuePath[$: P]: P[ComplexAttributeFilter] = P(attrPath ~ "[" ~/ valFilter ~ "]").map { case (path, filter) => ComplexAttributeFilter(path, filter) }
+    def logicalOperator[$: P]: P[(AFilter, AFilter) => LogicalOperation] = P(IgnoreCase("and")).map(_ => And.apply) | P(IgnoreCase("or")).map(_ => Or.apply)
 
-    def valFilter[_: P]: P[AFilter] = P((parensExp | attrExp) ~ (space ~ logicalOperator ~ space ~ valFilter).?).map {
+    def valFilter[$: P]: P[AFilter] = P((parensExp | attrExp) ~ (space ~ logicalOperator ~ space ~ valFilter).?).map {
       case (a, None) => a
       case (a, Some((op, b))) => op(a, b)
     }
-    def filter[_: P]: P[AFilter] = P((parensExp | valuePath | attrExp) ~ (space ~ logicalOperator ~ space ~ filter).?).map {
+    def filter[$: P]: P[AFilter] = P((parensExp | valuePath | attrExp) ~ (space ~ logicalOperator ~ space ~ filter).?).map {
       case (a, None) => a
       case (a, Some((op, b))) => op(a, b)
     }
 
-    def completeFilter[_: P]: P[AFilter] = P(Start ~ filter ~ End)
+    def completeFilter[$: P]: P[AFilter] = P(Start ~ filter ~ End)
 
-    def attributeSelector[_: P]: P[AttributeSelector] = P(Start ~ (filteredAttrPath | attrPath) ~ End)
+    def attributeSelector[$: P]: P[AttributeSelector] = P(Start ~ (filteredAttrPath | attrPath) ~ End)
   }
 }

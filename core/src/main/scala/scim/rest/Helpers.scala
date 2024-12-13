@@ -32,14 +32,14 @@ private object Helpers {
     }
 
     def search[F[_] : Applicative, A <: JsonModel](subPath: Path, queryParams: QueryParams, base: URI)(query: QueryFun[F, A]): Option[F[Response]] = {
-      if (subpathToId(subPath).isEmpty) Some {
-        (for {
+      if subpathToId(subPath).isEmpty then Some {
+        (for
           filter <- queryParams.get("filter").traverse(Filter.parse)
           sortBy = queryParams.get("sortBy").filter(_.nonEmpty)
           sortOrder <- queryParams.get("sortOrder").traverse(SortOrder.parse)
           startIndex <- queryParams.get("startIndex").traverse(IntValue.parse)
           count <- queryParams.get("count").traverse(IntValue.parse)
-        } yield SearchRequest(
+        yield SearchRequest(
           filter = filter,
           startIndex = startIndex,
           count = count,
@@ -57,7 +57,7 @@ private object Helpers {
   object Post {
     def create[F[_] : Applicative, A <: ExtensibleModel[_] : Decoder](subPath: Path, body: Json, base: URI)(
       create: A => F[Either[CreationError, A]]): Option[F[Response]] = {
-      if (subPath.isEmpty) Some {
+      if subPath.isEmpty then Some {
         decodeBody[A](body)
           .map(create)
           .map(_.map {
@@ -75,11 +75,13 @@ private object Helpers {
     }
 
     def search[F[_] : Applicative, A <: JsonModel](subPath: Path, body: Json, base: URI)(query: QueryFun[F, A]): Option[F[Response]] = {
-      if (subPath.headOption.contains(".search")) Some {
-        if (subPath.size > 1) Applicative[F].pure(Response.notFound)
-        decodeBody[SearchRequest](body)
-          .map(executeQueryRequest(query, base))
-          .fold(Applicative[F].pure, identity)
+      if subPath.headOption.contains(".search") then Some {
+        if subPath.size > 1 then Applicative[F].pure(Response.notFound)
+        else {
+          decodeBody[SearchRequest](body)
+            .map(executeQueryRequest(query, base))
+            .fold(Applicative[F].pure, identity)
+        }
       } else None
     }
   }
@@ -90,8 +92,8 @@ private object Helpers {
       subpathToId(subPath).map { id =>
         decodeBody[A](body)
           .flatMap(entity =>
-            if (entity.id.isEmpty) addId(entity.json, id).as[A].left.map(Response.decodingFailed)
-            else if (entity.id.contains(id)) Right(entity)
+            if entity.id.isEmpty then addId(entity.json, id).as[A].left.map(Response.decodingFailed)
+            else if entity.id.contains(id) then Right(entity)
             else Left(Response.conflict("id mismatch between body and url")))
           .map(update)
           .map(_.map(handleUpdateResult(base)))

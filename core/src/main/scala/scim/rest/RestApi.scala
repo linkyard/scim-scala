@@ -8,12 +8,12 @@ import scim.spi.{GroupStore, UserStore}
 class RestApi[F[_]] private(
   config: ServiceProviderConfiguration,
   urlConfig: UrlConfig,
-  resourceTypes: Iterable[ResourceType],
+  _resourceTypes: Iterable[ResourceType],
   schemaDefinitions: Iterable[SchemaDefinition])(
   implicit monad: Monad[F], userStore: UserStore[F], groupStore: GroupStore[F]) {
   def user: Resource[F] = new UserResource[F](urlConfig)
   def group: Resource[F] = new GroupResource[F](urlConfig)
-  def resourceTypes: Resource[F] = new ResourceTypeResource[F](urlConfig, resourceTypes)
+  def resourceTypes: Resource[F] = new ResourceTypeResource[F](urlConfig, _resourceTypes)
   def schemas: Resource[F] = new SchemasResource(urlConfig, schemaDefinitions)
   def serviceProviderConfig: Resource[F] = new ServiceProviderConfigResource[F](urlConfig, config)
   def me: Resource[F] = new NotImplementedResource[F]

@@ -31,7 +31,7 @@ package object spi {
      * Attention: use database-based sorts to avoid loading all results. */
     def applyTo[A <: JsonModel](results: Seq[A]): Seq[A] = {
       val sorted = results.sortBy(_.asJson(URI.create("urn:none")).hcursor.downField(byField).focus)
-      if (order == SortOrder.Descending) sorted.reverse
+      if order == SortOrder.Descending then sorted.reverse
       else sorted
     }
   }
