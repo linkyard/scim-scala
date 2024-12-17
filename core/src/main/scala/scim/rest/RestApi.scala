@@ -11,20 +11,14 @@ import scim.model.ServiceProviderConfiguration.OptionSupported
 import scim.spi.GroupStore
 import scim.spi.UserStore
 
-class RestApi[F[_]] private (
-  config: ServiceProviderConfiguration,
-  urlConfig: UrlConfig,
-  _resourceTypes: Iterable[ResourceType],
-  schemaDefinitions: Iterable[SchemaDefinition],
-)(using Monad[F], UserStore[F], GroupStore[F]) {
-  def user: Resource[F] = new UserResource[F](urlConfig)
-  def group: Resource[F] = new GroupResource[F](urlConfig)
-  def resourceTypes: Resource[F] = new ResourceTypeResource[F](urlConfig, _resourceTypes)
-  def schemas: Resource[F] = new SchemasResource(urlConfig, schemaDefinitions)
-  def serviceProviderConfig: Resource[F] = new ServiceProviderConfigResource[F](urlConfig, config)
-  def me: Resource[F] = new NotImplementedResource[F]
-  def default: Resource[F] = new NotFoundResource[F]
-}
+trait RestApi[F[_]]:
+  def user: Resource[F]
+  def group: Resource[F]
+  def resourceTypes: Resource[F]
+  def schemas: Resource[F]
+  def serviceProviderConfig: Resource[F]
+  def me: Resource[F]
+  def default: Resource[F]
 
 object RestApi {
   def apply[F[_]: Monad: UserStore: GroupStore](
@@ -33,7 +27,22 @@ object RestApi {
     resourceTypes: Iterable[ResourceType] = defaultResourceTypes,
     schemaDefinitions: Iterable[SchemaDefinition] = SchemaDefinition.defaultSchemas,
   ): RestApi[F] =
-    new RestApi[F](config, urlConfig, resourceTypes, schemaDefinitions)
+    new Impl[F](config, urlConfig, resourceTypes, schemaDefinitions)
+
+  private class Impl[F[_]](
+    config: ServiceProviderConfiguration,
+    urlConfig: UrlConfig,
+    _resourceTypes: Iterable[ResourceType],
+    schemaDefinitions: Iterable[SchemaDefinition],
+  )(using Monad[F], UserStore[F], GroupStore[F]) extends RestApi[F]:
+    def user: Resource[F] = new UserResource[F](urlConfig)
+    def group: Resource[F] = new GroupResource[F](urlConfig)
+    def resourceTypes: Resource[F] = new ResourceTypeResource[F](urlConfig, _resourceTypes)
+    def schemas: Resource[F] = new SchemasResource(urlConfig, schemaDefinitions)
+    def serviceProviderConfig: Resource[F] = new ServiceProviderConfigResource[F](urlConfig, config)
+    def me: Resource[F] = new NotImplementedResource[F]
+    def default: Resource[F] = new NotFoundResource[F]
+  end Impl
 
   val defaultConfig = new ServiceProviderConfiguration(
     patch = OptionSupported(true),
