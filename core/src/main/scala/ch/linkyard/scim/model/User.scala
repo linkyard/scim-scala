@@ -92,6 +92,7 @@ object User:
     region: Option[String],
     postalCode: Option[String],
     country: Option[String],
+    primary: Option[Boolean] = None,
   )
   case class EnterpriseUser(
     employeeNumber: Option[String],
@@ -102,7 +103,7 @@ object User:
     manager: Option[UserRef],
   )
   case class SimpleValue(value: String)
-  case class ValueWithTypeAndDisplay(value: Option[String], display: Option[String], `type`: Option[String])
+  case class ValueWithTypeAndDisplay(value: Option[String], display: Option[String] = None, `type`: Option[String] = None, primary: Option[Boolean] = None)
   case class UserRef(
     value: String,
     `$ref`: Option[String],

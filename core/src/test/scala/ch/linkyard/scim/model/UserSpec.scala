@@ -8,6 +8,7 @@ import ch.linkyard.scim.model.User.UserRef
 import ch.linkyard.scim.model.Codecs.given
 
 import java.net.URI
+import ch.linkyard.scim.model.User.ValueWithTypeAndDisplay
 
 class UserSpec extends AnyFunSpec with Matchers with OptionValues {
 
@@ -28,12 +29,35 @@ class UserSpec extends AnyFunSpec with Matchers with OptionValues {
       json should include("urn:ietf:params:scim:schemas:core:2.0:User")
     }
 
+    it("should serialize primary email") {
+      val json = User(User.Root(
+        id = Some("2819c223-7f76-453a-919d-413861904646"),
+        userName = "bjensen@example.com",
+        emails = Some(List(ValueWithTypeAndDisplay(Some("bjensen@example.com"), None, None, Some(true))))
+      )).json.noSpaces
+      json should include("""{"value":"bjensen@example.com","primary":true}""")
+    }
+
+    it("should serialize multiple emails with type") {
+      val json = User(User.Root(
+        id = Some("2819c223-7f76-453a-919d-413861904646"),
+        userName = "bjensen@example.com",
+        emails = Some(List(
+          ValueWithTypeAndDisplay(Some("bjensen@example.com"), Some("work"), None, Some(true)),
+          ValueWithTypeAndDisplay(Some("bjensen@private.com"), Some("home"), None),
+          ))
+      )).json.noSpaces
+      json should include("""{"value":"bjensen@example.com","display":"work","primary":true}""")
+      json should include("""{"value":"bjensen@private.com","display":"home"}""")
+    }
+
     it("should parse 'userMinimal'") {
       val root = User(Jsons.userMinimal).rootOrDefault
       root.userName should be("bjensen@example.com")
       root.id.value should be("2819c223-7f76-453a-919d-413861904646")
       root.name should be(None)
     }
+
     it("should parse 'userMinimalExternal'") {
       val root = User(Jsons.userMinimalExternal).rootOrDefault
       root.userName should be("bjensen@example.com")
