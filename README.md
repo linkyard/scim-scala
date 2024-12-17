@@ -17,7 +17,12 @@ You need to implement:
 
 ## Publish to maven central
 
-use `publisSigned` and then `sonatypeBundleRelease`.
+- `project core`
+- see if everything is ok by doing `clean` and then `test`
+- update version to non-SNAPSHOT in version.sbt
+- use `publishSigned` to build
+- `sonatypeBundleRelease`.
+- you can check the progress on <https://central.sonatype.com/>
 
 Note that you need to have `~/.sbt/1.0/sonatype.sbt` with the credentials, e.g. 
 ```
