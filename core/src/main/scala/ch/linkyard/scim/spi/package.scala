@@ -1,8 +1,8 @@
 package scim
 
-import io.circe.Json
 import ch.linkyard.scim.model.JsonModel
 import ch.linkyard.scim.model.SortOrder
+import io.circe.Json
 
 import java.net.URI
 

@@ -1,9 +1,5 @@
 package ch.linkyard.scim.model
 
-import io.circe.Codec
-import io.circe.Decoder
-import io.circe.Encoder
-import io.circe.generic.semiauto.*
 import ch.linkyard.scim.model.Filter.AttributeSelector
 import ch.linkyard.scim.model.PatchOp.OperationType
 import ch.linkyard.scim.model.ResourceType.SchemaExtension
@@ -11,6 +7,10 @@ import ch.linkyard.scim.model.ServiceProviderConfiguration.AuthenticationOptions
 import ch.linkyard.scim.model.ServiceProviderConfiguration.BulkOptions
 import ch.linkyard.scim.model.ServiceProviderConfiguration.FilterOptions
 import ch.linkyard.scim.model.ServiceProviderConfiguration.OptionSupported
+import io.circe.Codec
+import io.circe.Decoder
+import io.circe.Encoder
+import io.circe.generic.semiauto.*
 
 import java.net.URI
 import java.util.Locale

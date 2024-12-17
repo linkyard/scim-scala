@@ -2,11 +2,11 @@ package ch.linkyard.scim.rest
 
 import cats.Monad
 import cats.implicits.*
-import io.circe.Json
 import ch.linkyard.scim.model.*
 import ch.linkyard.scim.model.Codecs.given
 import ch.linkyard.scim.rest.Resource.Path
 import ch.linkyard.scim.rest.Resource.QueryParams
+import io.circe.Json
 import scim.spi.UserStore
 
 private class UserResource[F[_]: Monad](urlConfig: UrlConfig)(using store: UserStore[F])

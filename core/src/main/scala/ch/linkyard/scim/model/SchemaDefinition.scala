@@ -1,9 +1,9 @@
 package ch.linkyard.scim.model
 
+import ch.linkyard.scim.model.Codecs.given
 import io.circe.Json
 import io.circe.parser.*
 import io.circe.syntax.*
-import ch.linkyard.scim.model.Codecs.given
 
 import java.net.URI
 import java.net.URLEncoder

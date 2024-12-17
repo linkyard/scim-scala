@@ -2,12 +2,12 @@ package ch.linkyard.scim.rest
 
 import cats.Applicative
 import cats.implicits.*
-import io.circe.Json
 import ch.linkyard.scim.model.Filter
 import ch.linkyard.scim.model.SchemaDefinition
 import ch.linkyard.scim.rest.Helpers.Id
 import ch.linkyard.scim.rest.Resource.Path
 import ch.linkyard.scim.rest.Resource.QueryParams
+import io.circe.Json
 import scim.spi.Paging
 import scim.spi.SearchResult
 import scim.spi.Sorting

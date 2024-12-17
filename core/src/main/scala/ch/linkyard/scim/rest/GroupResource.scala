@@ -1,11 +1,11 @@
 package ch.linkyard.scim.rest
 
 import cats.Monad
-import io.circe.Json
 import ch.linkyard.scim.model.Codecs.given
 import ch.linkyard.scim.model.Group.Member
 import ch.linkyard.scim.rest.Resource.Path
 import ch.linkyard.scim.rest.Resource.QueryParams
+import io.circe.Json
 import scim.spi.GroupStore
 
 private class GroupResource[F[_]: Monad](urlConfig: UrlConfig)(using store: GroupStore[F])

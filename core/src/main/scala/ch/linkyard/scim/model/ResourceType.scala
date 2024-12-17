@@ -1,10 +1,10 @@
 package ch.linkyard.scim.model
 
+import ch.linkyard.scim.model.Codecs.given
+import ch.linkyard.scim.model.ResourceType.SchemaExtension
 import io.circe.Encoder
 import io.circe.Json
 import io.circe.syntax.*
-import ch.linkyard.scim.model.Codecs.given
-import ch.linkyard.scim.model.ResourceType.SchemaExtension
 
 import java.net.URI
 

@@ -1,11 +1,11 @@
 package ch.linkyard.scim.model
 
+import ch.linkyard.scim.model.Codecs.given
+import ch.linkyard.scim.model.Group.Root
 import io.circe.Decoder.Result
 import io.circe.Json
 import io.circe.generic.auto.*
 import io.circe.syntax.*
-import ch.linkyard.scim.model.Codecs.given
-import ch.linkyard.scim.model.Group.Root
 
 import java.net.URI
 import java.net.URLEncoder

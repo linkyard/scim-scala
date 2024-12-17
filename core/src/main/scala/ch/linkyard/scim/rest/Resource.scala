@@ -1,8 +1,8 @@
 package ch.linkyard.scim.rest
 
-import io.circe.Json
 import ch.linkyard.scim.rest.Resource.Path
 import ch.linkyard.scim.rest.Resource.QueryParams
+import io.circe.Json
 
 trait Resource[F[_]]:
   def get(subPath: Path, queryParams: QueryParams): F[Response]

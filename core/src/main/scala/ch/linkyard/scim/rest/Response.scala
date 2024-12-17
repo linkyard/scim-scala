@@ -1,11 +1,11 @@
 package ch.linkyard.scim.rest
 
-import io.circe.DecodingFailure
-import io.circe.Json
-import io.circe.syntax.*
 import ch.linkyard.scim.model.Codecs.given
 import ch.linkyard.scim.model.Error
 import ch.linkyard.scim.model.JsonModel
+import io.circe.DecodingFailure
+import io.circe.Json
+import io.circe.syntax.*
 
 import java.net.URI
 

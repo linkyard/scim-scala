@@ -1,13 +1,13 @@
 package ch.linkyard.scim.model
 
 import cats.implicits.*
-import io.circe.Json
-import io.circe.optics.JsonPath
-import io.circe.optics.JsonPath.*
 import ch.linkyard.scim.model.Filter.AttributePath
 import ch.linkyard.scim.model.Filter.AttributeSelector
 import ch.linkyard.scim.model.Filter.FilteredAttributePath
 import ch.linkyard.scim.model.PatchOp.Operation
+import io.circe.Json
+import io.circe.optics.JsonPath
+import io.circe.optics.JsonPath.*
 
 /** RFC 7644 3.5.2 */
 case class PatchOp(

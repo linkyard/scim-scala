@@ -3,9 +3,6 @@ package ch.linkyard.scim.rest
 import cats.Applicative
 import cats.Monad
 import cats.implicits.*
-import io.circe.Decoder
-import io.circe.Json
-import io.circe.syntax.*
 import ch.linkyard.scim.model.Codecs.given
 import ch.linkyard.scim.model.ExtensibleModel
 import ch.linkyard.scim.model.Filter
@@ -26,6 +23,9 @@ import ch.linkyard.scim.model.SearchRequest
 import ch.linkyard.scim.model.SortOrder
 import ch.linkyard.scim.rest.Resource.Path
 import ch.linkyard.scim.rest.Resource.QueryParams
+import io.circe.Decoder
+import io.circe.Json
+import io.circe.syntax.*
 import scim.spi.Paging
 import scim.spi.SearchResult
 import scim.spi.Sorting
