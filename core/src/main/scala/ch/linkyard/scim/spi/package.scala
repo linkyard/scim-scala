@@ -1,4 +1,4 @@
-package scim
+package ch.linkyard.scim
 
 import ch.linkyard.scim.model.JsonModel
 import ch.linkyard.scim.model.SortOrder

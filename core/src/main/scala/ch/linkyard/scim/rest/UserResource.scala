@@ -6,8 +6,8 @@ import ch.linkyard.scim.model.*
 import ch.linkyard.scim.model.Codecs.given
 import ch.linkyard.scim.rest.Resource.Path
 import ch.linkyard.scim.rest.Resource.QueryParams
+import ch.linkyard.scim.spi.UserStore
 import io.circe.Json
-import scim.spi.UserStore
 
 private class UserResource[F[_]: Monad](urlConfig: UrlConfig)(using store: UserStore[F])
     extends Resource[F] {

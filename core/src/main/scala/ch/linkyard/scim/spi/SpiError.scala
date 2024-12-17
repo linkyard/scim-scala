@@ -1,4 +1,4 @@
-package scim.spi
+package ch.linkyard.scim.spi
 
 sealed trait SpiError
 

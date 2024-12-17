@@ -8,8 +8,8 @@ import ch.linkyard.scim.model.ServiceProviderConfiguration.AuthenticationOptions
 import ch.linkyard.scim.model.ServiceProviderConfiguration.BulkOptions
 import ch.linkyard.scim.model.ServiceProviderConfiguration.FilterOptions
 import ch.linkyard.scim.model.ServiceProviderConfiguration.OptionSupported
-import scim.spi.GroupStore
-import scim.spi.UserStore
+import ch.linkyard.scim.spi.GroupStore
+import ch.linkyard.scim.spi.UserStore
 
 trait RestApi[F[_]]:
   def user: Resource[F]

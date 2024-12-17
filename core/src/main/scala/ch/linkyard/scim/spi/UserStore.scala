@@ -1,8 +1,8 @@
-package scim.spi
+package ch.linkyard.scim.spi
 
 import ch.linkyard.scim.model.Filter
 import ch.linkyard.scim.model.User
-import scim.spi.SpiError.*
+import ch.linkyard.scim.spi.SpiError.*
 
 trait UserStore[F[_]]:
   def get(id: String): F[Either[DoesNotExist, User]]

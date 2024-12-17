@@ -12,12 +12,12 @@ import ch.linkyard.scim.model.Filter.StringValue
 import ch.linkyard.scim.model.Group
 import ch.linkyard.scim.model.Schema
 import ch.linkyard.scim.model.User
-import scim.spi.GroupStore
-import scim.spi.Paging
-import scim.spi.SearchResult
-import scim.spi.Sorting
-import scim.spi.SpiError.*
-import scim.spi.UserStore
+import ch.linkyard.scim.spi.GroupStore
+import ch.linkyard.scim.spi.Paging
+import ch.linkyard.scim.spi.SearchResult
+import ch.linkyard.scim.spi.Sorting
+import ch.linkyard.scim.spi.SpiError.*
+import ch.linkyard.scim.spi.UserStore
 
 import java.net.URI
 import java.util.UUID

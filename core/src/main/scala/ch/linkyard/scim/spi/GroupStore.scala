@@ -1,11 +1,11 @@
-package scim.spi
+package ch.linkyard.scim.spi
 
 import ch.linkyard.scim.model.Filter
 import ch.linkyard.scim.model.Group
 import ch.linkyard.scim.model.Group.Member
-import scim.spi.SpiError.CreationError
-import scim.spi.SpiError.DoesNotExist
-import scim.spi.SpiError.UpdateError
+import ch.linkyard.scim.spi.SpiError.CreationError
+import ch.linkyard.scim.spi.SpiError.DoesNotExist
+import ch.linkyard.scim.spi.SpiError.UpdateError
 
 trait GroupStore[F[_]]:
   def get(id: String): F[Either[DoesNotExist, Group]]

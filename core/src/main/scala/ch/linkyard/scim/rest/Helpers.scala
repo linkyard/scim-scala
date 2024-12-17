@@ -23,19 +23,19 @@ import ch.linkyard.scim.model.SearchRequest
 import ch.linkyard.scim.model.SortOrder
 import ch.linkyard.scim.rest.Resource.Path
 import ch.linkyard.scim.rest.Resource.QueryParams
+import ch.linkyard.scim.spi.Paging
+import ch.linkyard.scim.spi.SearchResult
+import ch.linkyard.scim.spi.Sorting
+import ch.linkyard.scim.spi.SpiError.AlreadyExists
+import ch.linkyard.scim.spi.SpiError.Conflict
+import ch.linkyard.scim.spi.SpiError.CreationError
+import ch.linkyard.scim.spi.SpiError.DoesNotExist
+import ch.linkyard.scim.spi.SpiError.MalformedData
+import ch.linkyard.scim.spi.SpiError.MissingData
+import ch.linkyard.scim.spi.SpiError.UpdateError
 import io.circe.Decoder
 import io.circe.Json
 import io.circe.syntax.*
-import scim.spi.Paging
-import scim.spi.SearchResult
-import scim.spi.Sorting
-import scim.spi.SpiError.AlreadyExists
-import scim.spi.SpiError.Conflict
-import scim.spi.SpiError.CreationError
-import scim.spi.SpiError.DoesNotExist
-import scim.spi.SpiError.MalformedData
-import scim.spi.SpiError.MissingData
-import scim.spi.SpiError.UpdateError
 
 import java.net.URI
 

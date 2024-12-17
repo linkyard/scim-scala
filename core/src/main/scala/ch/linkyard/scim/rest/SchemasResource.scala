@@ -7,11 +7,11 @@ import ch.linkyard.scim.model.SchemaDefinition
 import ch.linkyard.scim.rest.Helpers.Id
 import ch.linkyard.scim.rest.Resource.Path
 import ch.linkyard.scim.rest.Resource.QueryParams
+import ch.linkyard.scim.spi.Paging
+import ch.linkyard.scim.spi.SearchResult
+import ch.linkyard.scim.spi.Sorting
+import ch.linkyard.scim.spi.SpiError.DoesNotExist
 import io.circe.Json
-import scim.spi.Paging
-import scim.spi.SearchResult
-import scim.spi.Sorting
-import scim.spi.SpiError.DoesNotExist
 
 import java.net.URI
 
