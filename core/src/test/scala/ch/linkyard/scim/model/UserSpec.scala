@@ -15,8 +15,17 @@ class UserSpec extends AnyFunSpec with Matchers with OptionValues {
     it("should contain id") {
       User(Jsons.userMinimal).id.value should be("2819c223-7f76-453a-919d-413861904646")
     }
+
     it("should contain schema") {
       User(Jsons.userMinimal).schema should be(Schema("urn:ietf:params:scim:schemas:core:2.0:User"))
+    }
+
+    it("should serialize model with schema") {
+      val json = User(User.Root(
+        id = Some("2819c223-7f76-453a-919d-413861904646"),
+        userName = "bjensen@example.com",
+      )).json.noSpaces
+      json should include("urn:ietf:params:scim:schemas:core:2.0:User")
     }
 
     it("should parse 'userMinimal'") {

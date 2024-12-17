@@ -48,6 +48,7 @@ object Group:
     displayName: String,
     members: Option[Seq[Member]] = None,
     meta: Option[Meta] = None,
+    schemas: Option[List[String]] = Some(List(Schema.Group.asString))
   ):
     def metaOrDefault: Meta = groupMeta(id.getOrElse(""))
   object Root:

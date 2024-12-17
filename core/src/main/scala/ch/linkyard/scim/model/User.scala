@@ -69,6 +69,7 @@ object User:
     roles: Option[Seq[String]] = None,
     x509Certificates: Option[Seq[SimpleValue]] = None,
     `urn:ietf:params:scim:schemas:extension:enterprise:2.0:User`: Option[EnterpriseUser] = None,
+    schemas: Option[List[String]] = Some(List(Schema.User.asString))
   ):
     def enterprise: Option[EnterpriseUser] = `urn:ietf:params:scim:schemas:extension:enterprise:2.0:User`
     def metaOrDefault: Meta = userMeta(id.getOrElse(userName))
