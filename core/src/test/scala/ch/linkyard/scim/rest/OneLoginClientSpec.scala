@@ -111,6 +111,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
         user.rootOrDefault.userName should be("peter.meier@example.com")
         Users.content should have size 1
         Users.content.head.rootOrDefault.userName should be("peter.meier@example.com")
+        ()
       }
     }
 
@@ -176,6 +177,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
         g1.id should be(group1.id)
         g1.rootOrDefault.members.value should have size 1
         g1.rootOrDefault.members.value.head.value should be(uid)
+        ()
       }
 
       // Add user to group 2
@@ -194,6 +196,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
         g2.id should be(gc.id)
         g2.rootOrDefault.members.value should have size 1
         g2.rootOrDefault.members.value.head.value should be(uid)
+        ()
       }
 
       Groups.content should have size 2
@@ -248,6 +251,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
         g.id should be(group1.id)
         g.rootOrDefault.members.value should have size 1
         g.rootOrDefault.members.value.head.value should be("a-id-1")
+        ()
       }
 
       Groups.content should have size 1
@@ -301,6 +305,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
         g.id should be(gc.id)
         g.rootOrDefault.members.value should have size 1
         g.rootOrDefault.members.value.head.value should be("a-id-1")
+        ()
       }
 
       Groups.content should have size 2
@@ -327,6 +332,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       if r1.status != 204 then {
         r1.status should be(200)
         Group(r1.body.value).rootOrDefault.members should be(None)
+        ()
       }
 
       // Set user to inactive
@@ -360,6 +366,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       if r1.status != 204 then {
         r1.status should be(200)
         Group(r1.body.value).rootOrDefault.members should be(None)
+        ()
       }
 
       // Delete user (guessed)

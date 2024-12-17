@@ -1,19 +1,21 @@
 package ch.linkyard.scim.rest
 
 import cats.Id
-import io.circe.parser.parse
-import org.scalatest.OptionValues
-import org.scalatest.funspec.AnyFunSpec
-import org.scalatest.matchers.should.Matchers
 import ch.linkyard.scim.model.Group
 import ch.linkyard.scim.model.Group.Member
 import ch.linkyard.scim.model.Jsons
 import ch.linkyard.scim.rest.TestHelpers.*
+import io.circe.parser.parse
+import org.scalatest.OptionValues
+import org.scalatest.compatible.Assertion
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 import java.net.URI
+import scala.annotation.unused
 
 class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
-  private def withResource[A](optimizable: Boolean)(f: (GroupResource[Id], MockStore[Group]) => A): A = {
+  private def withResource[A](@unused _unused: Boolean)(f: (GroupResource[Id], MockStore[Group]) => A): A = {
     implicit val store: MockStore.MockGroupStore = new MockStore.MockGroupStore {}
     val resource = new GroupResource[Id](UrlConfig("https://host.local"))
     f(resource, store)
@@ -45,7 +47,7 @@ class GroupResourceSpec extends AnyFunSpec with Matchers with OptionValues {
     ))
     val group2 = Group(Jsons.group2)
 
-    def tests(withIt: Boolean => ((GroupResource[Id], MockStore[Group]) => Unit) => Unit): Unit = {
+    def tests(withIt: Boolean => ((GroupResource[Id], MockStore[Group]) => Assertion) => Assertion): Unit = {
       it("should update if patched with single adds on member")(withIt(true) { (rest, store) =>
         store.content = Seq(group1, group2)
         val r = rest.patch(

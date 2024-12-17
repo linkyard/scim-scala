@@ -55,9 +55,11 @@ class UserResourceSpec extends AnyFunSpec with Matchers with OptionValues {
 
         store.content should have size 1
         val u = store.content.head
-        u.rootOrDefault.emails.value
+        val value = u.rootOrDefault.emails.value
           .find(_.`type`.contains("work"))
-          .value.value.value should be("test-user@test.ch")
+          .value.value.value
+        value should be("test-user@test.ch")
+        ()
       })
 
       it("should update displayName")(withIt { (rest: UserResource[Id], store: MockStore[User]) =>
@@ -87,6 +89,7 @@ class UserResourceSpec extends AnyFunSpec with Matchers with OptionValues {
         store.content should have size 1
         val u = store.content.head
         u.rootOrDefault.displayName.value should be("Tester 999")
+        ()
       })
     }
 
