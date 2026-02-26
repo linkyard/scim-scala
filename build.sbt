@@ -1,13 +1,8 @@
-import sbt.Keys.libraryDependencies
-import xerial.sbt.Sonatype._
-
 ThisBuild / scalaVersion := Dependencies.scala
 ThisBuild / organization := "ch.linkyard.scim"
 ThisBuild / organizationName := "linkyard ag"
+ThisBuild / description := "Library to implement SCIM servers in scala."
 ThisBuild / versionScheme := Some("early-semver")
-
-ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
-ThisBuild / publishTo := sonatypePublishToBundle.value
 ThisBuild / licenses := Seq("MIT" -> url("https://mit-license.org/"))
 
 lazy val root = (project in file("."))
@@ -51,7 +46,6 @@ lazy val core = (project in file("core"))
   .settings(
     name := "scim-scala-core",
     publish / skip := false,
-    sonatypeProjectHosting := Some(GitHubHosting("linkyard", "scim-scala", "mario.siegenthaler@linkyard.ch")),
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % Dependencies.cats,
       "io.circe" %% "circe-generic" % Dependencies.circe,

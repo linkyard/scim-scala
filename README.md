@@ -17,18 +17,14 @@ You need to implement:
 
 ## Publish to maven central
 
+- Make sure your GPG key is loaded (eg using `gpg --detach-sign --armor --use-agent --output - README.md`)
 - `project core`
 - see if everything is ok by doing `clean` and then `test`
-- update version to non-SNAPSHOT in version.sbt
+- update version to non-SNAPSHOT in `version.sbt`
 - use `publishSigned` to build
-- `sonatypeBundleRelease`.
-- you can check the progress on <https://central.sonatype.com/>
-
-Note that you need to have `~/.sbt/1.0/sonatype.sbt` with the credentials, e.g. 
-```
-credentials += Credentials("Maven Central",
-    "central.sonatype.com",
-    "token-user",
-    "token-password"
-)
-```
+- `sonaUpload`.
+- Visit <https://central.sonatype.com/publishing> to check an publish it
+- Push the changes
+- Create a release in github <https://github.com/linkyard/scim-scala/releases/new>
+  * Name: The version, e.g. `1.0.0`
+  * Release Notes: not all things that changed
