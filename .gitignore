@@ -7,3 +7,4 @@ project/metals.sbt
 .bloop
 .vscode
 project/project
+.cursor/mcp.json
