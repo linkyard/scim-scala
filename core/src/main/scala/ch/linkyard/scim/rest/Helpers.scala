@@ -253,7 +253,7 @@ private object Helpers:
           totalResults = result.totalCount,
           startIndex = Some(paging.start).filterNot(_ == 0).map(_ + 1),
           itemsPerPage = paging.maxResults,
-          Resources = Some(result.results.map(_.asJson(base))).filter(_.nonEmpty),
+          Resources = result.results.map(_.asJson(base)),
         )
       }.map(body => Response.okJson(body.asJson))
   }

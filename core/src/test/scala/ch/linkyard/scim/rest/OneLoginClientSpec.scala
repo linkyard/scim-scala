@@ -67,7 +67,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       r.status should be(200)
       val lr = r.body.value.as[ListResponse].value
       lr.totalResults should be(0)
-      lr.Resources should be(None)
+      lr.Resources shouldBe empty
     }
 
     it("should load existing groups") {
@@ -76,7 +76,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       r.status should be(200)
       val lr = r.body.value.as[ListResponse].value
       lr.totalResults should be(2)
-      val res = lr.Resources.value
+      val res = lr.Resources
       res should have size 2
       val g1 = res.head.as[Group].value
       g1.rootOrDefault.displayName should be("Group A")
@@ -147,7 +147,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       r3.status should be(200)
       val lr = r3.body.value.as[ListResponse].value
       lr.totalResults should be(1)
-      lr.Resources.value.head.as[Group].value should be(group1)
+      lr.Resources.head.as[Group].value should be(group1)
 
       // Create missing group
       val r4 = api.group.post(
@@ -233,7 +233,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       r2.status should be(200)
       val lr = r2.body.value.as[ListResponse].value
       lr.totalResults should be(1)
-      lr.Resources.value.head.as[Group].value should be(group1)
+      lr.Resources.head.as[Group].value should be(group1)
 
       // Add user to group
       val r3 = api.group.patch(
@@ -275,7 +275,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       r2.status should be(200)
       val lr = r2.body.value.as[ListResponse].value
       lr.totalResults should be(1)
-      lr.Resources.value.head.as[Group].value should be(group1)
+      lr.Resources.head.as[Group].value should be(group1)
 
       // Create group
       val r3 = api.group.post(
@@ -393,7 +393,7 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
         start should be(pos)
         lr.itemsPerPage.value should be(pageSize)
         lr.totalResults should be(count)
-        val es = lr.Resources.value.map(User.apply)
+        val es = lr.Resources.map(User.apply)
         if start + es.size < lr.totalResults then es ++ getThem(start + es.size, pageSize)
         else es
       }

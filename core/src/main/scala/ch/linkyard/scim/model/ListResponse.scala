@@ -8,6 +8,6 @@ case class ListResponse(
   /** 1-based */
   startIndex: Option[Int],
   itemsPerPage: Option[Int],
-  Resources: Option[Seq[Json]],
+  Resources: Seq[Json] = Seq.empty,
   schemas: Seq[Schema] = Seq(Schema.ListResponse),
 ) extends RootModel
