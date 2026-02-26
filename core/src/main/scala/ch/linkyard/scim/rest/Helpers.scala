@@ -8,8 +8,6 @@ import ch.linkyard.scim.model.ExtensibleModel
 import ch.linkyard.scim.model.Filter
 import ch.linkyard.scim.model.Filter.AFilter
 import ch.linkyard.scim.model.Filter.AttributePath
-import ch.linkyard.scim.model.Filter.AttributeSelector
-import ch.linkyard.scim.model.Filter.Comparison
 import ch.linkyard.scim.model.Filter.Comparison.Equal
 import ch.linkyard.scim.model.Filter.FilteredAttributePath
 import ch.linkyard.scim.model.Filter.NoFilter
@@ -18,7 +16,6 @@ import ch.linkyard.scim.model.JsonModel
 import ch.linkyard.scim.model.ListResponse
 import ch.linkyard.scim.model.PatchOp
 import ch.linkyard.scim.model.PatchOp.OperationType
-import ch.linkyard.scim.model.Schema
 import ch.linkyard.scim.model.SearchRequest
 import ch.linkyard.scim.model.SortOrder
 import ch.linkyard.scim.rest.Resource.Path
@@ -218,7 +215,7 @@ private object Helpers:
             })
           case None :: Nil => None // unsupported operation
           case Nil         => Some(Applicative[F].pure(Response.noContent(url(Some(id))))) // nothing to update..
-          case tooLong     => None // multiple operations are not supported (since no transactions)
+          case _           => None // multiple operations are not supported (since no transactions)
         }
       }.fold(e => Some(Applicative[F].pure(e)), identity)
     }

@@ -2,7 +2,6 @@ package ch.linkyard.scim.rest
 
 import cats.Applicative
 import cats.implicits.*
-import ch.linkyard.scim.model.Codecs.*
 import ch.linkyard.scim.model.Filter
 import ch.linkyard.scim.model.ResourceType
 import ch.linkyard.scim.rest.Helpers.Id
