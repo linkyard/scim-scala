@@ -39,7 +39,7 @@ lazy val root = (project in file("."))
         "org.scalatest" %% "scalatest" % Dependencies.scalatest % Test,
         "org.scalacheck" %% "scalacheck" % Dependencies.scalacheck % Test,
         "org.scalatestplus" %% "scalacheck-1-16" % Dependencies.scalatestScalacheck % Test,
-        "io.github.martinhh" %% "scalacheck-derived" % "0.5.0"
+        "io.github.martinhh" %% "scalacheck-derived" % "0.10.0"
       ),
       libraryDependencies ++= Dependencies.logBinding.map(_ % Test),
     )))
@@ -55,7 +55,7 @@ lazy val core = (project in file("core"))
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % Dependencies.cats,
       "io.circe" %% "circe-generic" % Dependencies.circe,
-      "io.circe" %% "circe-optics" % "0.15.0",
+      "io.circe" %% "circe-optics" % "0.15.1",
       "com.lihaoyi" %% "fastparse" % Dependencies.fastParse,
       "io.circe" %% "circe-parser" % Dependencies.circe,
       "io.circe" %% "circe-testing" % Dependencies.circe % Test,
