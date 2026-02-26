@@ -12,13 +12,13 @@ import java.net.URI
 case class Response(status: Int, body: Option[Json] = None, locationHeader: Option[URI] = None)
 
 object Response:
-  def apply(status: Int, body: Json): Response = Response(status, Some(body))
+  def apply(status: Int, body: Json): Response = Response(status, Some(body.deepDropNullValues))
 
   def ok: Response = Response(200, None)
   def ok(body: JsonModel, base: URI): Response =
     okJson(body.asJson(base), locationHeader = body.meta.resolveLocation(base).location)
   def okJson(body: Json, locationHeader: Option[URI] = None): Response =
-    Response(200, Some(body), locationHeader = locationHeader)
+    Response(200, Some(body.deepDropNullValues), locationHeader = locationHeader)
   def noContent: Response = Response(204, None)
   def noContent(locationHeader: URI): Response = Response(204, None, locationHeader = Some(locationHeader))
 

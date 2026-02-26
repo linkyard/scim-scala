@@ -65,6 +65,11 @@ class OneLoginClientSpec extends AnyFunSpec with Matchers with OptionValues with
       Users.content = Seq(user1, user2)
       val r = api.user.get(root, Map("filter" -> "userName eq \"never-existing-user\""))
       r.status should be(200)
+      val body = r.body.value
+      body.asObject.value.values.exists(_.isNull) should be(false)
+      body.hcursor.downField("startIndex").succeeded should be(false)
+      body.hcursor.downField("itemsPerPage").succeeded should be(false)
+      body.hcursor.downField("Resources").focus.value.asArray.value shouldBe empty
       val lr = r.body.value.as[ListResponse].value
       lr.totalResults should be(0)
       lr.Resources shouldBe empty
